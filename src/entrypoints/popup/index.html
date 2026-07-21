@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prix au m²</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <h1 class="panel__title">Prix au m²</h1>
+
+      <label class="switch">
+        <input class="switch__input" type="checkbox" id="show-badges" checked />
+        <span class="switch__track" aria-hidden="true"><span class="switch__thumb"></span></span>
+        <span class="switch__label">Afficher le prix au m² sur les annonces</span>
+      </label>
+
+      <p class="panel__hint" id="status" role="status">
+        Ouvrez une recherche immobilière sur leboncoin.
+      </p>
+
+      <footer class="panel__footer">
+        Les calculs sont faits dans votre navigateur. Aucune donnée n’est envoyée nulle part.
+      </footer>
+    </main>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

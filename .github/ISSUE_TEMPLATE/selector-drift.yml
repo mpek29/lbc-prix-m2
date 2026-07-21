@@ -1,0 +1,63 @@
+name: Badges have stopped appearing
+description: leboncoin changed their markup and the extension can no longer read a price or a surface.
+title: 'fix(site): '
+labels: ['selector-drift']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the expected failure mode of the project, not an unusual one —
+        leboncoin ships new markup regularly. The single most useful thing you
+        can attach is a copy of one ad card's HTML: it becomes a fixture, which
+        becomes a regression test, which is the fastest route from "it broke" to
+        "it cannot break that way again".
+
+  - type: textarea
+    id: card-html
+    attributes:
+      label: One ad card, as HTML
+      description: |
+        On a search results page: right-click an ad card → Inspect → select the
+        enclosing `<li>` → Copy → **Copy outerHTML**. Paste it here as-is. Do
+        not tidy it — the whitespace matters.
+      render: html
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: The search page it came from
+      placeholder: https://www.leboncoin.fr/recherche?category=10&locations=...
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: |
+        Anything prefixed with `[lbc-prix-m2]` in the browser console. The
+        extension logs a warning naming the problem when every card on a page
+        fails the same way.
+      render: text
+
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: What you see
+      options:
+        - No badges at all
+        - Badges on some cards but not others
+        - Badges showing an obviously wrong figure
+        - Badges in the wrong place on the card
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Firefox 141.0 / Chrome 139.0.7258.67
+    validations:
+      required: true

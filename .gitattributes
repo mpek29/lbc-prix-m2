@@ -1,0 +1,10 @@
+# Normalise line endings so Windows/WSL checkouts stay byte-identical in CI.
+* text=auto eol=lf
+
+# Captured markup is a verbatim recording: never let a tool reformat it.
+*.html linguist-vendored
+src/site/leboncoin/__fixtures__/*.html -text -diff linguist-generated
+
+# Binary assets
+*.png binary
+*.zip binary

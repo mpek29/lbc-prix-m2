@@ -1,0 +1,56 @@
+/*
+ * Injected into leboncoin's own page, so every rule is namespaced and every
+ * value is stated outright. Inheriting from the host page would look tidier
+ * right up until a Tailwind upgrade changes what `text-caption` means.
+ *
+ * Colours track the host page's light/dark mode without reading any of its
+ * variables, so a rename on their side degrades to the light palette rather
+ * than to unreadable text.
+ */
+
+.lbc-prix-m2-badge {
+  --lbc-prix-m2-fg: #4b5563;
+  --lbc-prix-m2-bg: #f3f4f6;
+  --lbc-prix-m2-border: #e5e7eb;
+
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 6px;
+  border: 1px solid var(--lbc-prix-m2-border);
+  border-radius: 4px;
+  background: var(--lbc-prix-m2-bg);
+  color: var(--lbc-prix-m2-fg);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+@media (prefers-color-scheme: dark) {
+  .lbc-prix-m2-badge {
+    --lbc-prix-m2-fg: #d1d5db;
+    --lbc-prix-m2-bg: rgb(255 255 255 / 8%);
+    --lbc-prix-m2-border: rgb(255 255 255 / 14%);
+  }
+}
+
+/*
+ * Our own visually-hidden helper. leboncoin ships a `.sr-only` class that does
+ * exactly this, and borrowing it would work — until the day they drop it and
+ * this text starts being read aloud in the middle of the page.
+ */
+.lbc-prix-m2-badge__assistive {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest something the extension should do.
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The extension does one thing on purpose. That is not a rule against new
+        ideas, but proposals that keep it to one screen of behaviour have a much
+        better chance than proposals that turn it into a dashboard.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to work out that the extension does not tell you?
+      description: Describe the situation, not the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you have tried or considered instead

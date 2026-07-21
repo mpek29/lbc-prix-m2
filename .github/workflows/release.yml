@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # A tagged build is not the place to discover a lint error.
+      - name: Verify
+        run: npm run verify
+
+      - name: Refuse to release a tag that disagrees with package.json
+        run: |
+          tagged="${GITHUB_REF_NAME#v}"
+          declared="$(node -p 'require("./package.json").version')"
+          if [ "$tagged" != "$declared" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package.json version $declared"
+            exit 1
+          fi
+
+      - name: Package Chrome
+        run: npx wxt zip -b chrome
+
+      # Also produces the sources archive addons.mozilla.org requires for
+      # review of a bundled extension.
+      - name: Package Firefox
+        run: npx wxt zip -b firefox
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: .output/*.zip
+          generate_release_notes: true
+          body: |
+            Store submissions are done by hand — store credentials are
+            deliberately not held by CI. See CONTRIBUTING.md.
