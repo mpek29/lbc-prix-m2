@@ -1,0 +1,54 @@
+/*
+ * The banner shown above the results while our sort is active. Same reasoning
+ * as the badge: namespaced selectors, fixed colours, its own background, and no
+ * `prefers-color-scheme` branch. See price-badge.css.
+ */
+
+.lbc-prix-m2-summary[data-lbc-prix-m2-summary] {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  box-sizing: border-box;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.lbc-prix-m2-summary__title {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lbc-prix-m2-summary__detail {
+  color: #374151;
+}
+
+/*
+ * Cards lifted from a page the reader never navigated to. leboncoin's React
+ * never mounted on them, so the photo carousel and the favourite button are
+ * inert. Saying so quietly is better than letting a dead button be discovered.
+ */
+[data-lbc-prix-m2-imported] {
+  position: relative;
+}
+
+[data-lbc-prix-m2-imported]::after {
+  content: 'annonce d’une autre page';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 2;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgb(17 24 39 / 72%);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  pointer-events: none;
+}

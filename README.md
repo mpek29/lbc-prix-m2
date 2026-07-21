@@ -7,9 +7,18 @@ a leboncoin search, right next to the price leboncoin already prints.
 640 €  [11,6 €/m²]      Appartement · 3 pièces · 55m² · Étage 1
 ```
 
-That is the whole feature. It runs in Chrome and Firefox from one codebase, it
-talks to no server, and it asks for a single permission (`storage`, to remember
-one boolean).
+It also adds two options to leboncoin's own sort menu, next to theirs:
+
+```
+Tri : Pertinence
+  ( ) Pertinence          ( ) Prix croissants
+  ( ) Plus récentes       ( ) Prix décroissants
+  ( ) Plus anciennes      (o) Prix/m² croissant     ← added
+                          ( ) Prix/m² décroissant   ← added
+```
+
+It runs in Chrome and Firefox from one codebase and asks for a single permission
+(`storage`, to remember one boolean).
 
 ## Install
 
@@ -92,15 +101,38 @@ only when the two differ. That makes it safe to run on every mutation, and it
 means the extension corrects itself when React recycles a card's DOM node for a
 different ad mid-scroll.
 
+### Sorting by €/m²
+
+leboncoin sorts on its server, and its sort parameter offers relevance, date and
+price. Nothing divides one by the other, so the browser has to do the ordering,
+which means holding the results to be ordered. Picking one of the €/m² options
+makes the extension walk the search's own pages, one request at a time, and sort
+what comes back.
+
+Two ceilings apply, and the banner above the results says which one you hit.
+leboncoin refuses to paginate past 100 pages, so a search with 217 762 matches
+cannot be fully ordered by anyone. And the extension stops at 20 pages of its
+own accord, because a search worth hundreds of requests wants a filter instead.
+
+A filtered search, which is how people actually use the site, is usually three
+requests and a complete answer. Ads pulled from pages you have not visited are
+marked, and their photo carousel and favourite button do not work, because
+leboncoin's own code never ran on them.
+
 For the full picture and the reasoning behind each choice, see
-[docs/architecture.md](docs/architecture.md) and [docs/adr/](docs/adr/).
+[docs/architecture.md](docs/architecture.md) and [docs/adr/](docs/adr/), in
+particular [ADR 0007](docs/adr/0007-collect-pages-to-sort-by-price-per-area.md).
 
 ## Privacy
 
-Nothing leaves your browser. No analytics, no error reporting, no remote config,
-no network request of any kind. The extension holds no host permissions beyond
-the page it is injected into, and the Firefox manifest declares
+Nothing about you leaves your browser. No analytics, no error reporting, no
+remote config, and no server of ours to talk to. The Firefox manifest declares
 `data_collection_permissions: none`.
+
+The one exception is deliberate and visible: choosing a €/m² sort fetches
+further pages of the search you are already looking at, from leboncoin, using
+your existing session. Those are the same pages you would get by clicking
+through the results yourself.
 
 The only thing stored is whether you have the badges switched on, in
 `storage.local`, on your own machine.

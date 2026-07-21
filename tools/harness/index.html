@@ -48,6 +48,46 @@
       picture {
         display: none;
       }
+      .menu {
+        max-width: 720px;
+        margin-bottom: 20px;
+        padding: 12px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
+      }
+      .menu ul {
+        display: block;
+        margin: 0 0 10px;
+      }
+      .menu button[data-spark-component='chip'] {
+        padding: 4px 12px;
+        border: 1px solid #94a3b8;
+        border-radius: 999px;
+        background: #fff;
+        cursor: pointer;
+      }
+      [role='radiogroup'] {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      [role='radiogroup'] > span {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      [role='radio'] {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #94a3b8;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+      }
+      [role='radio'][aria-checked='true'] {
+        border-color: #2563eb;
+        background: #2563eb;
+      }
       .gap-sm {
         display: flex;
         align-items: center;
@@ -65,6 +105,17 @@
   </head>
   <body>
     <h1>Captured leboncoin cards, enhanced by the real code</h1>
+    <div class="menu">
+      <ul>
+        <li>
+          <button type="button" aria-pressed="true" data-spark-component="chip">
+            <span class="inline-block grow truncate">Tri : Pertinence</span>
+            <span aria-hidden="true">▸</span>
+          </button>
+        </li>
+      </ul>
+      <div id="sort-menu"></div>
+    </div>
     <div id="results"></div>
     <script type="module" src="./entry.ts"></script>
   </body>

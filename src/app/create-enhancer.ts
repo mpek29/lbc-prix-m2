@@ -1,6 +1,9 @@
 import { observeMutations } from '@/platform/dom-observer';
 import type { Logger } from '@/platform/logger';
 import { isBadge } from '@/ui/price-badge';
+import { isSortOption } from '@/ui/sort-option';
+import { isSortSummary } from '@/ui/sort-summary';
+import { createAreaSorter } from './sort-by-area';
 import { enhanceAdCards, removeAllBadges, type EnhancementReport } from './enhance-ad-cards';
 
 export interface Enhancer {
@@ -22,7 +25,12 @@ export function createEnhancer(doc: Document, logger: Logger): Enhancer {
   let stopObserving: (() => void) | null = null;
   let warnedAboutDrift = false;
 
+  // The sort menu is rendered on demand, so the same pass that badges the cards
+  // also puts our options into the menu whenever leboncoin opens it.
+  const sorter = createAreaSorter(doc, logger);
+
   const runPass = () => {
+    sorter.syncMenu();
     const report = enhanceAdCards(doc);
     if (report.badged > 0) logger.debug('pass complete', report);
 
@@ -40,7 +48,7 @@ export function createEnhancer(doc: Document, logger: Logger): Enhancer {
     start() {
       if (stopObserving) return;
       runPass();
-      stopObserving = observeMutations(doc.body, runPass, { isOwnNode: isBadge });
+      stopObserving = observeMutations(doc.body, runPass, { isOwnNode: isOurs });
       logger.debug('watching for new ad cards');
     },
 
@@ -48,9 +56,22 @@ export function createEnhancer(doc: Document, logger: Logger): Enhancer {
       if (!stopObserving) return;
       stopObserving();
       stopObserving = null;
+      sorter.reset();
       logger.debug('removed badges', { count: removeAllBadges(doc) });
     },
   };
+}
+
+/**
+ * Everything this extension puts on the page: badges, sort rows, the summary.
+ *
+ * The observer needs the full set. Recognising only badges would let a sort row
+ * we injected read as a page change, which schedules another pass, which
+ * injects nothing and settles, but wakes the whole thing up for no reason on
+ * every menu open.
+ */
+function isOurs(node: Node): boolean {
+  return isBadge(node) || isSortOption(node) || isSortSummary(node);
 }
 
 /**

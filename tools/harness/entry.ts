@@ -12,10 +12,15 @@
  */
 import { createEnhancer } from '@/app/create-enhancer';
 import type { Logger } from '@/platform/logger';
-import { fixtureList } from '@/site/leboncoin/__fixtures__/load';
+import { fixture, fixtureList } from '@/site/leboncoin/__fixtures__/load';
 
 const results = document.querySelector('#results');
-if (!results) throw new Error('harness: #results missing');
+const menu = document.querySelector('#sort-menu');
+if (!results || !menu) throw new Error('harness: mount points missing');
+
+// The sort menu is rendered on demand on the real site. Here it is always open,
+// which is the state worth looking at.
+menu.innerHTML = fixture('sort-radiogroup');
 
 results.innerHTML = fixtureList(
   'ad-card-rental',
@@ -37,3 +42,14 @@ harness.start();
 // leave the page byte-identical to how leboncoin served it, and
 // `harness.start()` must put it back.
 Object.assign(window, { harness });
+
+// `?sort=asc` picks that option on load, so a screenshot can capture the sorted
+// state without anyone clicking. There is no leboncoin to page through here, so
+// it sorts the cards on screen and says so.
+const wanted = new URLSearchParams(location.search).get('sort');
+if (wanted === 'asc' || wanted === 'desc') {
+  const index = wanted === 'asc' ? 0 : 1;
+  document
+    .querySelectorAll('[data-lbc-prix-m2-sort]')
+    [index]?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}

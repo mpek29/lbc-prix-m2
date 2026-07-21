@@ -7,6 +7,16 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- Two options in leboncoin's own sort menu: "Prix/m² croissant" and "Prix/m²
+  décroissant". Because leboncoin sorts on its server and offers no €/m²
+  ordering, the extension collects the search's pages itself, one request at a
+  time, and sorts what it gets.
+- A banner above the results saying what was actually sorted, including when
+  the result set is larger than leboncoin will paginate. See
+  [ADR 0007](docs/adr/0007-collect-pages-to-sort-by-price-per-area.md).
+
 ## [0.1.0] - 2026-07-21
 
 Initial release.
