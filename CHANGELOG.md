@@ -22,5 +22,5 @@ Initial release.
 - Console warning when every card on a page fails to yield a price, so a
   markup change on leboncoin's side is reported rather than silent.
 
-[unreleased]: https://github.com/florianp/lbc-prix-m2/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/florianp/lbc-prix-m2/releases/tag/v0.1.0
+[unreleased]: https://github.com/mpek29/lbc-prix-m2/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/mpek29/lbc-prix-m2/releases/tag/v0.1.0

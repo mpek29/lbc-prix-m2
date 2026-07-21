@@ -61,6 +61,25 @@ Every layer is tested at the level that can actually catch its bugs:
 [`vitest.config.ts`](vitest.config.ts). The other layers are not, on purpose:
 coverage of glue code measures the tests, not the code.
 
+### Seeing it, without leboncoin
+
+```bash
+npm run harness    # → http://localhost:5177
+```
+
+Serves the captured cards with the real enhancer running against them, in a real
+browser. happy-dom will tell you a badge is in the DOM; it will not tell you the
+badge is unreadable, wrapped onto its own line, or that a
+`prefers-color-scheme` branch never applied.
+
+`window.harness.stop()` in the console must leave the page exactly as leboncoin
+served it, and `.start()` must put it back — a fast check that the extension
+leaves no trace.
+
+Use it for anything that changes `src/ui/`. Use a real leboncoin page before
+tagging a release: the harness proves the badge renders, only the live site
+proves the selectors still match.
+
 ## Commits
 
 [Conventional Commits](https://www.conventionalcommits.org/), enforced by

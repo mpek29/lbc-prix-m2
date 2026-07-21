@@ -28,7 +28,7 @@ export default defineConfig({
           browser_specific_settings: {
             gecko: {
               // Required for signing, and for storage to survive an update.
-              id: 'lbc-prix-m2@florian.p',
+              id: 'lbc-prix-m2@mpek29.github.io',
               // The first release that ships MV3 with a stable event page.
               strict_min_version: '115.0',
               // Mozilla has required an explicit declaration since November

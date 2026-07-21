@@ -80,7 +80,7 @@ if every card on a full page fails the same way, it logs a warning to the
 console naming the problem rather than going quietly silent.
 
 If you see that — or just see no badges — please
-[open an issue](https://github.com/florianp/lbc-prix-m2/issues/new?template=selector-drift.yml)
+[open an issue](https://github.com/mpek29/lbc-prix-m2/issues/new?template=selector-drift.yml)
 with a copy of one ad card's HTML. That capture goes straight into
 [`src/site/leboncoin/__fixtures__/`](src/site/leboncoin/__fixtures__/) as a
 regression test, which is the fastest possible path from "it broke" to "it

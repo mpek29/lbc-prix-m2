@@ -31,7 +31,7 @@ export function createEnhancer(doc: Document, logger: Logger): Enhancer {
       logger.warn(
         `${report.cards} ad cards found but no price could be read from any of them. ` +
           'leboncoin has most likely changed its markup — please open an issue: ' +
-          'https://github.com/florianp/lbc-prix-m2/issues/new?template=selector-drift.yml',
+          'https://github.com/mpek29/lbc-prix-m2/issues/new?template=selector-drift.yml',
       );
     }
   };

@@ -113,8 +113,15 @@ export default tseslint.config(
 
   // Build-time scripts run in Node, not in a page.
   {
-    files: ['*.config.ts', '*.config.js', 'scripts/**/*.mjs'],
+    files: ['*.config.ts', '*.config.js', 'scripts/**/*.mjs', 'tools/**/*.mjs'],
     languageOptions: { globals: globals.node },
+    rules: { 'no-console': 'off' },
+  },
+
+  // The visual harness is a development tool, not shipped code. Printing to the
+  // console is the entire point of its logger.
+  {
+    files: ['tools/**/*.ts'],
     rules: { 'no-console': 'off' },
   },
 
