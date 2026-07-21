@@ -26,9 +26,9 @@ npm run build:firefox  # → .output/firefox-mv3
 - **Firefox**: `about:debugging#/runtime/this-firefox` → _Load Temporary Add-on_
   → `.output/firefox-mv3/manifest.json`
 
-Firefox drops temporary add-ons when it restarts. A permanent install needs a
-package signed by Mozilla. `npm run zip:firefox` produces the extension plus the
-sources archive AMO asks for.
+Firefox drops temporary add-ons when it restarts, and release-channel Firefox
+refuses unsigned ones outright. For a permanent install, and for store
+submission, see [docs/publishing.md](docs/publishing.md).
 
 ## Develop
 

@@ -16,6 +16,7 @@
     "build:all": "npm run build && npm run build:firefox",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
+    "sign:firefox": "wxt build -b firefox && web-ext sign --source-dir .output/firefox-mv3 --artifacts-dir .output/signed --channel unlisted",
     "typecheck": "wxt prepare && tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -47,6 +48,7 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10",
+    "web-ext": "^10.5.0",
     "wxt": "^0.20.27"
   },
   "lint-staged": {

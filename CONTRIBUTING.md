@@ -114,4 +114,5 @@ immutable: supersede, do not edit.
 3. CI builds both targets, produces the Firefox sources archive AMO needs, and
    attaches everything to a GitHub release.
 4. Upload to the Chrome Web Store and AMO by hand. Store credentials are not
-   held by CI.
+   held by CI. See [docs/publishing.md](docs/publishing.md) for both stores,
+   and for signing a build you can install permanently without a listing.
