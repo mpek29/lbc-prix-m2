@@ -3,15 +3,28 @@
  * value is stated outright. Inheriting from the host page would look tidier
  * right up until a Tailwind upgrade changes what `text-caption` means.
  *
- * Colours track the host page's light/dark mode without reading any of its
- * variables, so a rename on their side degrades to the light palette rather
- * than to unreadable text.
+ * The badge paints its own background as well as its own text colour, so it is
+ * self-contained: it stays readable whatever the surrounding page is doing. See
+ * the note below about why it does not follow `prefers-color-scheme`.
+ *
+ * Every rule is written as `.class[data-attribute]` rather than `.class`. That
+ * is not decoration: leboncoin ships Tailwind, its utilities are single-class
+ * selectors, and its stylesheet may well be ordered after ours. Matching on the
+ * class *and* the marker attribute puts us a specificity step above anything a
+ * utility framework can produce, without reaching for `!important`.
  */
 
-.lbc-prix-m2-badge {
-  --lbc-prix-m2-fg: #4b5563;
+.lbc-prix-m2-badge[data-lbc-prix-m2-badge] {
+  /*
+   * Near-black rather than the muted grey this started as. The badge sits
+   * beside an 18px bold price, and a 12px grey next to that reads as disabled
+   * text — the eye skips it, which defeats the entire point of the extension.
+   * Secondary is conveyed by size and weight; it does not also need low
+   * contrast. 16.1:1 against the chip, comfortably past WCAG AAA.
+   */
+  --lbc-prix-m2-fg: #111827;
   --lbc-prix-m2-bg: #f3f4f6;
-  --lbc-prix-m2-border: #e5e7eb;
+  --lbc-prix-m2-border: #d1d5db;
 
   display: inline-flex;
   align-items: center;
@@ -23,26 +36,37 @@
   background: var(--lbc-prix-m2-bg);
   color: var(--lbc-prix-m2-fg);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 18px;
   white-space: nowrap;
   vertical-align: middle;
 }
 
-@media (prefers-color-scheme: dark) {
-  .lbc-prix-m2-badge {
-    --lbc-prix-m2-fg: #d1d5db;
-    --lbc-prix-m2-bg: rgb(255 255 255 / 8%);
-    --lbc-prix-m2-border: rgb(255 255 255 / 14%);
-  }
-}
+/*
+ * There is deliberately no `prefers-color-scheme: dark` branch here, and there
+ * was one until it shipped a bug worth remembering.
+ *
+ * That media query reports what the *user's system* prefers. It says nothing
+ * about the page we have been injected into. leboncoin renders white in every
+ * configuration, so on a machine with dark mode enabled at OS level the dark
+ * branch matched, painted the badge #f9fafb, and put near-white text on a white
+ * card. Legible in the mockup, invisible in real life.
+ *
+ * A media query is only safe to follow when you control the surface it is
+ * describing. Here we do not — so the badge carries its own background and a
+ * fixed dark-on-light palette, which stays readable whatever the host page and
+ * the operating system happen to be doing.
+ *
+ * If leboncoin ever ships a real dark mode, the answer is still not this query:
+ * it is reading their actual background at runtime, or a class they set.
+ */
 
 /*
  * Our own visually-hidden helper. leboncoin ships a `.sr-only` class that does
  * exactly this, and borrowing it would work — until the day they drop it and
  * this text starts being read aloud in the middle of the page.
  */
-.lbc-prix-m2-badge__assistive {
+[data-lbc-prix-m2-badge] .lbc-prix-m2-badge__assistive {
   position: absolute;
   width: 1px;
   height: 1px;
