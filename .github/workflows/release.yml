@@ -47,5 +47,5 @@ jobs:
           files: .output/*.zip
           generate_release_notes: true
           body: |
-            Store submissions are done by hand — store credentials are
-            deliberately not held by CI. See CONTRIBUTING.md.
+            Store submissions are done by hand. Store credentials are not held
+            by CI. See CONTRIBUTING.md.

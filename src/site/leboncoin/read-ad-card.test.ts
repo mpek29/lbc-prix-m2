@@ -6,7 +6,7 @@ import { findAdCards, readAdCard } from './read-ad-card';
 function mountCard(html: string): Element {
   document.body.innerHTML = `<ul>${html}</ul>`;
   const card = findAdCards(document)[0];
-  if (!card) throw new Error('fixture contains no ad card — the capture is broken, not the code');
+  if (!card) throw new Error('fixture contains no ad card, the capture is broken, not the code');
   return card;
 }
 
@@ -56,7 +56,7 @@ describe('readAdCard', () => {
 
   it('prefers the living space over the plot size', () => {
     // The title reads "128m² · Terrain 620m²". Reading the wrong one turns a
-    // 1 945 €/m² house into a 402 €/m² one — plausible enough to go unnoticed.
+    // 1 945 €/m² house into a 402 €/m² one, plausible enough to go unnoticed.
     const reading = read('ad-card-sale');
 
     expect(reading.kind === 'listing' && reading.listing.area).toBe(128);
@@ -81,7 +81,7 @@ describe('readAdCard', () => {
 });
 
 describe('nodes the extension injected itself', () => {
-  /** Stands in for a badge: same shape, same problem — it contains a price. */
+  /** Stands in for a badge: same shape, same problem: it contains a price. */
   function injectAfterPrice(card: Element): Element {
     const injected = document.createElement('span');
     injected.setAttribute('data-injected', '');

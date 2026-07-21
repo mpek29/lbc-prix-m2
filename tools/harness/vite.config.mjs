@@ -6,8 +6,8 @@ import { defineConfig } from 'vite';
  *
  *   npm run harness
  *
- * It answers the question unit tests cannot — does the badge actually look
- * right, and does it land where it should — without needing a live leboncoin
+ * It answers the question unit tests cannot, does the badge actually look
+ * right, and does it land where it should, without needing a live leboncoin
  * page, an installed extension, or a login. See tools/harness/entry.ts.
  */
 export default defineConfig({

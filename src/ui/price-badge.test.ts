@@ -6,7 +6,7 @@ import { BADGE_MARKER, createPriceBadge, findBadges, isBadge } from './price-bad
 /**
  * Read off disk rather than imported. Vite resolves `?raw` on a `.css` file to
  * an empty string under test, which silently turned the assertions below into
- * assertions about nothing — so the first thing this suite checks is that it
+ * assertions about nothing, so the first thing this suite checks is that it
  * actually has the stylesheet in its hands.
  */
 const stylesheet = readFileSync(resolve(process.cwd(), 'src/ui/price-badge.css'), 'utf8');

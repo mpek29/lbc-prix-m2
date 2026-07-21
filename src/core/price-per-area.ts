@@ -1,10 +1,10 @@
 import type { Euros, EurosPerSquareMetre, Listing, SquareMetres } from './types';
 
 /**
- * Rentals sit around 10–40 €/m²/month, sales around 1 000–15 000 €/m². A result
- * outside this band is not a surprising listing, it is a misread page: a price
- * matched against the wrong surface, or a surface matched against a room count.
- * We would rather show nothing than show a confident wrong number.
+ * Rentals sit around 10 to 40 €/m²/month, sales around 1 000 to 15 000 €/m². A
+ * result outside this band usually means a misread page: a price matched
+ * against the wrong surface, or a surface matched against a room count. Better
+ * to show nothing than a confident wrong number.
  */
 const CREDIBLE_RANGE = { min: 1, max: 50_000 } as const;
 

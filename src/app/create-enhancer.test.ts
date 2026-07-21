@@ -80,7 +80,7 @@ describe('createEnhancer', () => {
 });
 
 describe('when leboncoin changes its markup', () => {
-  /** A full page of cards where no price can be found — the signature of drift. */
+  /** A full page of cards where no price can be found: the signature of drift. */
   function renderPageWithUnreadablePrices() {
     document.body.innerHTML = fixtureList('ad-card-rental', 'ad-card-sale', 'ad-card-rental');
     for (const node of document.querySelectorAll('.sr-only, p[aria-hidden="true"]')) node.remove();

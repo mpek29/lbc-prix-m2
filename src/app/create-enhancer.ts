@@ -30,7 +30,7 @@ export function createEnhancer(doc: Document, logger: Logger): Enhancer {
       warnedAboutDrift = true;
       logger.warn(
         `${report.cards} ad cards found but no price could be read from any of them. ` +
-          'leboncoin has most likely changed its markup — please open an issue: ' +
+          'leboncoin has most likely changed its markup, please open an issue: ' +
           'https://github.com/mpek29/lbc-prix-m2/issues/new?template=selector-drift.yml',
       );
     }
@@ -59,7 +59,7 @@ export function createEnhancer(doc: Document, logger: Logger): Enhancer {
  *
  * A handful of ads legitimately hide their price, so a couple of misses mean
  * nothing. Every single card on a full page failing the same way does not
- * happen naturally — that is a selector that stopped matching, and the user
+ * happen naturally, that is a selector that stopped matching, and the user
  * deserves to be told rather than left wondering why the extension went quiet.
  */
 function looksLikeSelectorDrift(report: EnhancementReport): boolean {

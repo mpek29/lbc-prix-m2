@@ -7,7 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-## [0.1.0] — 2026-07-21
+## [0.1.0] - 2026-07-21
 
 Initial release.
 
@@ -19,8 +19,8 @@ Initial release.
 - Chrome and Firefox builds from a single codebase, both Manifest V3.
 - Badges announced to screen readers as a spelled-out sentence, mirroring
   leboncoin's own dual-rendering pattern.
-- Console warning when every card on a page fails to yield a price, so a
-  markup change on leboncoin's side is reported rather than silent.
+- Console warning when every card on a page fails to yield a price, so a markup
+  change on leboncoin's side gets reported instead of going unnoticed.
 
 [unreleased]: https://github.com/mpek29/lbc-prix-m2/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/mpek29/lbc-prix-m2/releases/tag/v0.1.0

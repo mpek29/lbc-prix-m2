@@ -47,7 +47,7 @@ describe('observeMutations', () => {
 
   it('ignores mutations it caused itself', async () => {
     // Without this the extension would insert a badge, observe the insertion,
-    // and insert again — forever.
+    // and insert again, forever.
     const onChange = vi.fn();
     stop = observeMutations(document.body, onChange, {
       isOwnNode: (node) => node instanceof Element && node.hasAttribute('data-ours'),

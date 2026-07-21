@@ -21,7 +21,7 @@ const MAX_CREDIBLE_AREA: SquareMetres = 10_000;
  * Extracts a floor area from free text.
  *
  * Returns `null` for ads that carry no surface at all (parking spaces, garages,
- * "viager" listings), which is a perfectly ordinary outcome — roughly one card
+ * "viager" listings), which is a perfectly ordinary outcome, roughly one card
  * in ten on a mixed search page.
  */
 export function parseArea(text: string): SquareMetres | null {

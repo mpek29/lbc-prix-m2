@@ -3,7 +3,7 @@
  *
  * These are branded-by-convention aliases rather than nominal types: the goal
  * is to make signatures self-documenting, not to fight the compiler. Every
- * value of these types is guaranteed finite and strictly positive — parsers are
+ * value of these types is guaranteed finite and strictly positive, parsers are
  * responsible for rejecting anything else before it reaches this layer.
  */
 

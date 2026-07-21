@@ -4,5 +4,5 @@ node_modules/
 coverage/
 CHANGELOG.md
 
-# Verbatim captures of leboncoin markup — reformatting them would defeat their purpose.
+# Verbatim captures of leboncoin markup; reformatting them would defeat their purpose.
 src/site/leboncoin/__fixtures__/

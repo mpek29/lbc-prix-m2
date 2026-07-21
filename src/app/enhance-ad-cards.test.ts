@@ -68,7 +68,7 @@ describe('enhanceAdCards', () => {
     expect(document.querySelectorAll('li')[2]?.outerHTML).toBe(before);
   });
 
-  it('is idempotent — a second pass writes nothing', () => {
+  it('is idempotent, a second pass writes nothing', () => {
     enhanceAdCards(document);
     const report = enhanceAdCards(document);
 

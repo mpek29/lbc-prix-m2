@@ -8,7 +8,7 @@
  * without a live leboncoin page or an installed extension.
  *
  * Everything below the entrypoints layer is reachable from here because none of
- * it touches an extension API — which is itself worth knowing.
+ * it touches an extension API, which is itself worth knowing.
  */
 import { createEnhancer } from '@/app/create-enhancer';
 import type { Logger } from '@/platform/logger';

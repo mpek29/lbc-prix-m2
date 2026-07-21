@@ -11,7 +11,7 @@ import {
   VISUAL_ONLY,
 } from './selectors';
 
-/** Why a card produced no listing. Reported, not thrown — see `AdCardReading`. */
+/** Why a card produced no listing. Reported, not thrown: see `AdCardReading`. */
 export type SkipReason = 'no-price' | 'no-area';
 
 export type AdCardReading =
@@ -19,7 +19,7 @@ export type AdCardReading =
       readonly kind: 'listing';
       readonly listing: Listing;
       /**
-       * The element the badge should be inserted after — leboncoin's own price
+       * The element the badge should be inserted after, leboncoin's own price
        * paragraph. Handing the caller a node rather than a selector keeps DOM
        * knowledge inside this layer.
        */
@@ -34,7 +34,7 @@ export interface ReadOptions {
    * This adapter's contract is "read leboncoin's DOM". Once a badge has been
    * inserted, part of the card is no longer leboncoin's, and a reader that
    * cannot tell the difference will happily parse `11,6 €/m²` back out of its
-   * own output — anchoring the next badge to the previous one, and drifting a
+   * own output, anchoring the next badge to the previous one, and drifting a
    * little further from the price on every pass.
    */
   readonly isInjected?: (node: Node) => boolean;
@@ -86,9 +86,9 @@ type InjectedPredicate = (node: Node) => boolean;
 
 /**
  * leboncoin renders every price twice: once visually with `aria-hidden`, and
- * once as a sentence for screen readers. We try the screen-reader copy first —
- * it is unambiguous ("Prix: 640 €.") and cannot collide with a promotional
- * banner — then fall back to the visual one.
+ * once as a sentence for screen readers. We try the screen-reader copy first,
+ * since it is unambiguous ("Prix: 640 €.") and cannot collide with a
+ * promotional banner, then fall back to the visual one.
  */
 function locatePrice(card: Element, isInjected: InjectedPredicate): PriceLocation | null {
   return (

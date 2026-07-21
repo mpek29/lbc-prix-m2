@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         If the badges have simply stopped appearing, use the
-        **Badges have stopped appearing** template instead — it asks for the one
+        **Badges have stopped appearing** template instead. It asks for the one
         thing that actually fixes those.
 
   - type: textarea

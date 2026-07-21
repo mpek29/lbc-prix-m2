@@ -23,7 +23,7 @@ const CLASS = {
  * `innerHTML`, ever: a content script that assembles markup from strings on a
  * page it does not control is one bad escape away from being the vulnerability.
  *
- * The two-span structure mirrors leboncoin's own accessibility pattern — a
+ * The two-span structure mirrors leboncoin's own accessibility pattern, a
  * visual element hidden from assistive technology, beside a spelled-out
  * sentence that only screen readers reach.
  */
@@ -59,7 +59,7 @@ export function findBadgeIn(card: Element): Element | null {
   return card.querySelector(`[${BADGE_MARKER}]`);
 }
 
-/** The label a badge is currently displaying — its cache key. */
+/** The label a badge is currently displaying: its cache key. */
 export function labelOf(badge: Element): string {
   return badge.getAttribute(BADGE_MARKER) ?? '';
 }

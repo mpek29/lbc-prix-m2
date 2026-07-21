@@ -30,5 +30,5 @@ export function createLogger(namespace: string, options: LoggerOptions = {}): Lo
   };
 }
 
-/** A logger that records nothing — the default for tests and for disabled paths. */
+/** A logger that records nothing: the default for tests and for disabled paths. */
 export const silentLogger: Logger = { debug: SILENT, warn: SILENT, error: SILENT };

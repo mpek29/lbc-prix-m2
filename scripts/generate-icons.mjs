@@ -25,7 +25,7 @@ const SAMPLES = 4;
 const BRAND = [0xff, 0x6e, 0x14];
 const INK = [0xff, 0xff, 0xff];
 
-/** Geometry, as fractions of the canvas — the mark scales, the numbers do not. */
+/** Geometry, as fractions of the canvas: the mark scales, the numbers do not. */
 const SHAPE = {
   cornerRadius: 0.22,
   square: { from: 0.2, to: 0.64, stroke: 0.085 },
@@ -50,7 +50,7 @@ const inside = (v, from, to) => v >= from && v <= to;
 /**
  * Returns the colour of one sample, or `null` for transparent.
  *
- * The mark is an open square — the "carré" of "mètre carré" — with a small
+ * The mark is an open square, the "carré" of "mètre carré", with a small
  * solid square set above its shoulder where an exponent would sit.
  */
 function sample(u, v) {

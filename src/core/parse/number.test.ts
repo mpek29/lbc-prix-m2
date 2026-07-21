@@ -10,8 +10,8 @@ describe('parseFrenchNumber', () => {
     expect(parseFrenchNumber('55,5')).toBe(55.5);
   });
 
-  // These are real, literal separator characters — indistinguishable from an
-  // ordinary space in a diff, which is precisely why each case carries its code
+  // These are real, literal separator characters, indistinguishable from an
+  // ordinary space in a diff, which is why each case carries its code
   // point in the label. Confusing them is the bug this function exists to
   // prevent, so do not "tidy" them into plain spaces.
   it.each([

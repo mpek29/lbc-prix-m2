@@ -18,7 +18,7 @@
   /*
    * Near-black rather than the muted grey this started as. The badge sits
    * beside an 18px bold price, and a 12px grey next to that reads as disabled
-   * text — the eye skips it, which defeats the entire point of the extension.
+   * text, the eye skips it, which defeats the entire point of the extension.
    * Secondary is conveyed by size and weight; it does not also need low
    * contrast. 16.1:1 against the chip, comfortably past WCAG AAA.
    */
@@ -43,8 +43,8 @@
 }
 
 /*
- * There is deliberately no `prefers-color-scheme: dark` branch here, and there
- * was one until it shipped a bug worth remembering.
+ * There is no `prefers-color-scheme: dark` branch here, and that is on purpose.
+ * There was one, until it shipped a bug worth remembering.
  *
  * That media query reports what the *user's system* prefers. It says nothing
  * about the page we have been injected into. leboncoin renders white in every
@@ -53,7 +53,7 @@
  * card. Legible in the mockup, invisible in real life.
  *
  * A media query is only safe to follow when you control the surface it is
- * describing. Here we do not — so the badge carries its own background and a
+ * describing. Here we do not, so the badge carries its own background and a
  * fixed dark-on-light palette, which stays readable whatever the host page and
  * the operating system happen to be doing.
  *
@@ -63,7 +63,7 @@
 
 /*
  * Our own visually-hidden helper. leboncoin ships a `.sr-only` class that does
- * exactly this, and borrowing it would work — until the day they drop it and
+ * exactly this, and borrowing it would work, until the day they drop it and
  * this text starts being read aloud in the middle of the page.
  */
 [data-lbc-prix-m2-badge] .lbc-prix-m2-badge__assistive {

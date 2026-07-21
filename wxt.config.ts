@@ -13,7 +13,7 @@ export default defineConfig({
   // spelled out to keep every shipped asset under `src/`.
   publicDir: 'src/public',
   outDir: '.output',
-  // MV3 on both targets — see docs/adr/0006-target-manifest-v3-on-both-browsers.md
+  // MV3 on both targets. See docs/adr/0006-target-manifest-v3-on-both-browsers.md
   manifestVersion: 3,
   manifest: ({ browser }) => ({
     name: 'Prix au m² pour leboncoin',

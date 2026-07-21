@@ -29,7 +29,7 @@ const layer = (name, forbiddenPatterns, forbiddenGlobals = []) => ({
       'error',
       ...forbiddenGlobals.map((name_) => ({
         name: name_,
-        message: `\`${name_}\` is not available to this layer — inject it from a layer that owns it.`,
+        message: `\`${name_}\` is not available to this layer; inject it from a layer that owns it.`,
       })),
     ],
   },

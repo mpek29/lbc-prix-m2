@@ -4,9 +4,9 @@ import rental from './ad-card-rental.html?raw';
 import sale from './ad-card-sale.html?raw';
 
 /**
- * Captures are imported with `?raw`, which hands back the file's bytes verbatim
- * — non-breaking spaces and all. Anything that parsed or re-serialised the
- * markup on the way in would quietly repair the very details these fixtures
+ * Captures are imported with `?raw`, which hands back the file's bytes
+ * verbatim, non-breaking spaces and all. Anything that parsed or re-serialised
+ * the markup on the way in would quietly repair the very details these fixtures
  * exist to pin down.
  */
 const CAPTURES = {

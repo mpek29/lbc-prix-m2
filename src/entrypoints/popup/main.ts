@@ -1,7 +1,7 @@
 import { showBadges } from '@/platform/settings';
 
 /**
- * One control, one setting. The popup deliberately holds no state of its own:
+ * One control, one setting. The popup holds no state of its own:
  * storage is the source of truth, and the checkbox is a view of it.
  */
 const toggle = document.querySelector<HTMLInputElement>('#show-badges');

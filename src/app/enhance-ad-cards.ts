@@ -20,9 +20,9 @@ export interface EnhancementReport {
 /**
  * Walks every ad card in the document and makes the page match the data.
  *
- * The pass is deliberately stateless: nothing is remembered between calls, and
+ * The pass is stateless: nothing is remembered between calls, and
  * the decision to act is taken by comparing what the card shows against what it
- * should show. That is what makes it safe to run on every mutation — and what
+ * should show. That is what makes it safe to run on every mutation, and what
  * makes it self-healing when leboncoin recycles a DOM node for a different ad,
  * which React does constantly during infinite scroll.
  */

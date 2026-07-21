@@ -23,18 +23,18 @@ const rounded = new Intl.NumberFormat(LOCALE, {
   maximumFractionDigits: 0,
 });
 
-/** `11,6` / `3 192` — the figure alone, without a unit. */
+/** `11,6` / `3 192`: the figure alone, without a unit. */
 export function formatAmount(value: EurosPerSquareMetre): string {
   return value < DECIMAL_THRESHOLD ? withDecimal.format(value) : rounded.format(value);
 }
 
-/** `11,6 €/m²` — what the badge shows. */
+/** `11,6 €/m²`: what the badge shows. */
 export function formatPricePerArea(value: EurosPerSquareMetre): string {
   return `${formatAmount(value)} €/m²`;
 }
 
 /**
- * `Prix au mètre carré : 11,6 €.` — what a screen reader announces.
+ * `Prix au mètre carré : 11,6 €.`, the sentence a screen reader announces.
  *
  * Spelled out rather than symbolic, mirroring the `sr-only` paragraphs
  * leboncoin already places beside every `aria-hidden` price.
