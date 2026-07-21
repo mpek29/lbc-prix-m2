@@ -7,6 +7,17 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: 'chore(deps)'
+    ignore:
+      # TypeScript is pinned to 5.x by something outside our control:
+      # typescript-eslint declares `typescript: ">=4.8.4 <6.1.0"`. TypeScript 7
+      # is the Go rewrite and falls outside that range, so a major bump leaves
+      # the tests and the build green while `npm run lint` fails, which reads
+      # like a flaky PR rather than an unsupported dependency.
+      #
+      # Lift this once typescript-eslint supports 7.x. Minor and patch updates
+      # still come through.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     groups:
       # One PR for the toolchain rather than five. They move together and are
       # verified by the same CI run either way.
