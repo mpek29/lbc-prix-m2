@@ -26,6 +26,7 @@ jobs:
         run: npm run verify
 
       - name: Refuse to release a tag that disagrees with package.json
+        id: meta
         run: |
           tagged="${GITHUB_REF_NAME#v}"
           declared="$(node -p 'require("./package.json").version')"
@@ -33,19 +34,63 @@ jobs:
             echo "::error::tag $GITHUB_REF_NAME does not match package.json version $declared"
             exit 1
           fi
+          # Artefacts are named after the package version, which has no `v`.
+          # The release notes name those files, so they need this, not the tag.
+          echo "version=$tagged" >> "$GITHUB_OUTPUT"
 
       - name: Package Chrome
         run: npx wxt zip -b chrome
 
-      # Also produces the sources archive addons.mozilla.org requires for
-      # review of a bundled extension.
       - name: Package Firefox
         run: npx wxt zip -b firefox
 
+      # The zips are the whole distribution, so the instructions travel with
+      # them. Anyone landing on a release page from a link has everything they
+      # need without opening the repository.
       - uses: softprops/action-gh-release@v2
         with:
           files: .output/*.zip
           generate_release_notes: true
           body: |
-            Store submissions are done by hand. Store credentials are not held
-            by CI. See CONTRIBUTING.md.
+            Shows the price per square metre on every property ad in a leboncoin
+            search, next to the price leboncoin already prints.
+
+            ## Install
+
+            Download the file for your browser from **Assets** below.
+
+            ### Firefox
+
+            1. Open `about:debugging#/runtime/this-firefox`
+            2. Click **Load Temporary Add-on…**
+            3. Select `lbc-prix-m2-${{ steps.meta.outputs.version }}-firefox.zip` (no need to extract it)
+
+            Firefox removes temporary add-ons when it closes, so this has to be
+            redone after each restart. That is Firefox policy, not a packaging
+            problem: release builds only keep add-ons Mozilla has signed, and the
+            `xpinstall.signatures.required` setting from older forum posts is
+            ignored there. To install permanently, see
+            [A permanent Firefox install](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md#a-permanent-firefox-install).
+
+            ### Chrome
+
+            1. Extract `lbc-prix-m2-${{ steps.meta.outputs.version }}-chrome.zip` somewhere you can
+               leave it, since Chrome reloads the folder from disk on every launch
+            2. Open `chrome://extensions` and turn on **Developer mode** (top right)
+            3. Click **Load unpacked** and select the extracted folder
+
+            This one survives restarts. Chrome shows a developer-mode warning on
+            each launch, which you can dismiss.
+
+            ### Then
+
+            Open a search such as
+            [rentals](https://www.leboncoin.fr/recherche?category=10) or
+            [sales](https://www.leboncoin.fr/recherche?category=9). Badges appear
+            next to the prices. The toolbar icon toggles them off.
+
+            No data leaves your browser. The only permission requested is
+            `storage`, used to remember whether badges are switched on.
+
+            `lbc-prix-m2-${{ steps.meta.outputs.version }}-sources.zip` is the unbundled source, kept
+            for reproducibility.

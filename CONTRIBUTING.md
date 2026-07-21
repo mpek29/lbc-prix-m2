@@ -111,8 +111,38 @@ immutable: supersede, do not edit.
 
 1. Update [CHANGELOG.md](CHANGELOG.md) and the version in `package.json`.
 2. Tag `vX.Y.Z` and push it.
-3. CI builds both targets, produces the Firefox sources archive AMO needs, and
-   attaches everything to a GitHub release.
-4. Upload to the Chrome Web Store and AMO by hand. Store credentials are not
-   held by CI. See [docs/publishing.md](docs/publishing.md) for both stores,
-   and for signing a build you can install permanently without a listing.
+3. CI builds both targets, attaches the zips to a GitHub release, and writes
+   install instructions into the release notes.
+
+Distribution stops there. The extension is not on the Firefox or Chrome stores,
+so a release is the zips plus the instructions that come with them.
+
+## A permanent Firefox install
+
+Release-channel Firefox only keeps add-ons Mozilla has signed, so a zip loaded
+through `about:debugging` disappears when the browser closes. Mozilla will sign
+a build for private use, free, with no public listing and usually in under a
+minute.
+
+1. Get API credentials at
+   <https://addons.mozilla.org/en-US/developers/addon/api/key/> (needs a Firefox
+   Account).
+2. Put them in the environment. They must not be committed:
+
+   ```bash
+   export WEB_EXT_API_KEY='user:12345678:123'
+   export WEB_EXT_API_SECRET='...'
+   ```
+
+3. Sign:
+
+   ```bash
+   npm run sign:firefox
+   ```
+
+The signed `.xpi` lands in `.output/signed/`. Open it with Firefox and it stays
+installed.
+
+The extension id in `wxt.config.ts` (`lbc-prix-m2@mpek29.github.io`) is what ties
+a signature to this add-on. Changing it after anyone has installed a signed
+build orphans their copy, so treat it as permanent.

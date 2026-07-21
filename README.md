@@ -13,7 +13,44 @@ one boolean).
 
 ## Install
 
-**From source**
+The extension is distributed as a zip, not through the Firefox or Chrome stores.
+Download the one for your browser from the
+[latest release](https://github.com/mpek29/lbc-prix-m2/releases/latest):
+
+| File                                | For     |
+| ----------------------------------- | ------- |
+| `lbc-prix-m2-<version>-firefox.zip` | Firefox |
+| `lbc-prix-m2-<version>-chrome.zip`  | Chrome  |
+
+### Firefox
+
+1. Open `about:debugging#/runtime/this-firefox`
+2. Click **Load Temporary Add-on…**
+3. Select the downloaded `.zip` (no need to extract it)
+
+Worth knowing before you start: Firefox removes temporary add-ons when it
+closes, so this has to be redone each time you restart the browser. That is not
+a bug in the packaging. Release-channel Firefox only keeps add-ons that Mozilla
+has signed, and the `xpinstall.signatures.required` setting you will find in
+older forum posts is ignored there. It works only on Developer Edition, Nightly
+and ESR.
+
+If reloading it every session gets old, `npm run sign:firefox` gets the build
+signed by Mozilla for private use, which installs permanently on normal Firefox
+without any public listing. It needs a Firefox Account and takes about a minute.
+Steps are in [CONTRIBUTING.md](CONTRIBUTING.md#a-permanent-firefox-install).
+
+### Chrome
+
+1. Extract the `.zip` somewhere you can leave it, since Chrome loads the folder
+   from disk every launch and will drop the extension if it moves
+2. Open `chrome://extensions` and turn on **Developer mode** (top right)
+3. Click **Load unpacked** and select the extracted folder
+
+This survives restarts. Chrome shows a "Disable developer mode extensions"
+warning on each launch, which you can dismiss.
+
+### Building it yourself
 
 ```bash
 npm ci
@@ -21,14 +58,8 @@ npm run build          # → .output/chrome-mv3
 npm run build:firefox  # → .output/firefox-mv3
 ```
 
-- **Chrome**: `chrome://extensions` → Developer mode → _Load unpacked_ →
-  `.output/chrome-mv3`
-- **Firefox**: `about:debugging#/runtime/this-firefox` → _Load Temporary Add-on_
-  → `.output/firefox-mv3/manifest.json`
-
-Firefox drops temporary add-ons when it restarts, and release-channel Firefox
-refuses unsigned ones outright. For a permanent install, and for store
-submission, see [docs/publishing.md](docs/publishing.md).
+Then load those directories with the same steps as above, picking
+`.output/firefox-mv3/manifest.json` for Firefox.
 
 ## Develop
 
