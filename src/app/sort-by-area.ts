@@ -8,7 +8,13 @@ import {
 } from '@/site/leboncoin/sort-control';
 import { findResultsList } from '@/site/leboncoin/results-list';
 import { findPagination } from '@/site/leboncoin/pagination';
-import { pageUrl, planFetch, readPagination, type FetchPlan } from '@/site/leboncoin/search-page';
+import {
+  COLLECTION_SORT,
+  pageUrl,
+  planFetch,
+  readPagination,
+  type FetchPlan,
+} from '@/site/leboncoin/search-page';
 import { fetchPagesSequentially } from '@/platform/http';
 import type { Logger } from '@/platform/logger';
 import { createPager, findPager, updatePager } from '@/ui/pager';
@@ -176,7 +182,7 @@ export function createAreaSorter(
     try {
       if (willFetch && summary) {
         setResultsBusy(list, true);
-        setSortProgress(summary, { done: 1, total: plan.pages });
+        setSortProgress(summary, { done: 0, total: plan.pages });
       }
 
       const { pages, stoppedEarly } = await collect(plan, signal, (done) => {
@@ -226,40 +232,50 @@ export function createAreaSorter(
   }
 
   /**
-   * Walks the search's pages until they stop producing anything new.
+   * Walks the search's pages, pinning the sort so they tile the result set.
    *
-   * The stop condition is "this page contributed no ad we did not already
-   * have", which covers every way a walk can end with one rule:
+   * The page on screen is ordered by relevance, which leboncoin re-ranks with a
+   * pivot between requests. Walking those pages returns some ads twice and
+   * misses others: a 62 result search collected 50 that way, and blamed
+   * leboncoin's page ceiling for the gap. Every request now carries an explicit
+   * sort so page N means the same thing for the length of the walk.
    *
-   * - the results ran out, and the page comes back empty;
-   * - leboncoin clamped a too-high page number back to one we have already
-   *   read, so the request succeeds and returns familiar ads;
-   * - DataDome served a challenge, which arrives as a valid 200 with no ads.
+   * That costs one request for page 1, which was previously taken from the DOM
+   * for free. The cards on screen are still reused, matched back by id, so they
+   * keep their working carousel and favourite button.
    *
-   * Counting only new ads matters because the plan is an upper bound. When the
-   * total is unknown it is the full ceiling, and a one-page search would
-   * otherwise spend a hundred requests rediscovering the same 35 ads.
+   * The walk stops on the first page producing nothing new, which covers the
+   * results running out, leboncoin clamping the page number, and a challenge
+   * page, all of which arrive as a valid response with no new ads in it.
    */
   async function collect(
     plan: FetchPlan,
     signal: AbortSignal,
     onProgress: (done: number) => void,
   ): Promise<{ pages: CollectedAd[][]; stoppedEarly: boolean }> {
-    // Page 1 is already on screen. Re-fetching it would be a wasted request and
-    // would swap live cards for inert copies.
-    const first = collectFrom(doc, doc);
-    const pages: CollectedAd[][] = [first];
-    const seen = new Set(first.map((ad) => ad.id).filter((id): id is string => id !== null));
+    const liveAds = collectFrom(doc, doc);
 
-    const urls = Array.from({ length: plan.pages - 1 }, (_, i) =>
-      pageUrl(doc.location.href, i + 2),
+    // One page of results is already here, in full. Re-fetching it under a
+    // different sort would return the same ads in a different order, and we are
+    // about to reorder them anyway.
+    if (plan.pages <= 1) return { pages: [liveAds], stoppedEarly: false };
+
+    const live = new Map<string, CollectedAd>();
+    for (const ad of liveAds) if (ad.id !== null) live.set(ad.id, ad);
+
+    const urls = Array.from({ length: plan.pages }, (_, i) =>
+      pageUrl(doc.location.href, i + 1, COLLECTION_SORT),
     );
 
+    const pages: CollectedAd[][] = [];
+    const seen = new Set<string>();
     let stoppedEarly = false;
-    let read = 1;
+    let read = 0;
 
     for await (const fetched of fetchPagesSequentially(urls, { delayMs, signal })) {
-      const ads = collectFrom(fetched, doc);
+      const ads = collectFrom(fetched, doc).map((ad) =>
+        ad.id !== null ? (live.get(ad.id) ?? ad) : ad,
+      );
       const fresh = ads.filter((ad) => ad.id === null || !seen.has(ad.id));
 
       if (fresh.length === 0) {
@@ -271,6 +287,14 @@ export function createAreaSorter(
       for (const ad of fresh) if (ad.id !== null) seen.add(ad.id);
       pages.push(fresh);
       onProgress((read += 1));
+    }
+
+    // Nothing came back at all, which is what a challenge page on the very
+    // first request looks like. Rendering that empties the list and takes the
+    // reader's results away. Sort what is on screen instead.
+    if (pages.length === 0) {
+      logger.warn('collected nothing; sorting the ads already on the page');
+      return { pages: [liveAds], stoppedEarly: true };
     }
 
     return { pages, stoppedEarly };
@@ -375,10 +399,15 @@ export function createAreaSorter(
       return `${count(ads.length)} annonces collectées sur ${pages}.${range}`;
     }
 
-    return (
-      `Les ${count(ads.length)} premières sur ${count(plan.total)} résultats. ` +
-      `leboncoin ne permet pas d’aller au-delà.${range}`
-    );
+    // Only now is leboncoin's ceiling the reason for the shortfall.
+    if (plan.capped) {
+      return (
+        `Les ${count(ads.length)} premières sur ${count(plan.total)} résultats. ` +
+        `leboncoin ne permet pas d’aller au-delà.${range}`
+      );
+    }
+
+    return `${count(ads.length)} annonces sur ${count(plan.total)} annoncées.${range}`;
   }
 
   function showSummary(list: Element, text: { title: string; detail: string }): Element | null {

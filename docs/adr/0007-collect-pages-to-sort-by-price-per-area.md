@@ -32,6 +32,12 @@ patience or cleverness gets past a ceiling the server enforces.
 
 Fetch the search's own pages, sequentially, and sort what comes back.
 
+- **Pin the sort while collecting.** The default ordering is `relevance`, which
+  leboncoin re-ranks with a pivot, so an ad on page 1 can be on page 2 a second
+  later. Walking those pages returns some ads twice and misses others: a 62
+  result search collected 50 that way. Every request carries an explicit sort,
+  so page N means the same thing for the length of the walk. The order does not
+  matter, since the result is about to be sorted by €/m² anyway.
 - **Walk, do not calculate.** Keep requesting pages until one produces no ad we
   did not already have. That single rule ends the walk whether the results ran
   out, leboncoin clamped the page number, or DataDome served a challenge.
@@ -78,6 +84,13 @@ between reading a search quickly and hammering a site. A challenge page or a
 run of familiar ads both stop the walk, so a site that says no is not asked
 twice. If leboncoin ever signals that the whole thing is unwelcome, the budget
 is one constant and the feature is one directory.
+
+**Two shortfalls were reported as leboncoin's fault before they were ours.**
+First a missing total silently became a single-page sort. Then an incomplete
+walk was labelled "leboncoin ne permet pas d'aller au-delà" when nothing near
+their ceiling had been reached. Both read as the site being limited rather than
+the extension being wrong, which is the worst way for a bug to present: it
+sends the reader to complain to the wrong people.
 
 **Depending on `__NEXT_DATA__` was a mistake worth recording.** The first
 version read the totals out of it and gave up when it could not, which passed

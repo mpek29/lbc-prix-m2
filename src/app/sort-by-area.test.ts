@@ -57,7 +57,13 @@ function makeSorter(options: { delayMs?: number; budgetPages?: number } = {}) {
 let pageSequence = 0;
 const freshPage = () => {
   pageSequence += 1;
-  const html = fixtureList('ad-card-sale').replaceAll('2984110023', `90000000${pageSequence}`);
+  // Two ads per page, every id unique across pages, so a walk actually
+  // accumulates. One ad per page made the pager suite collect two ads in total
+  // and report "Page 1 sur 1" while looking like a pagination bug.
+  const html = fixtureList('ad-card-sale', 'ad-card-rental').replace(
+    /(\/ad\/[a-z_]+\/)(\d+)/g,
+    (_match, prefix: string, id: string) => `${prefix}${id}${pageSequence}`,
+  );
   return new Response(`<html><body>${html}</body></html>`, { status: 200 });
 };
 
@@ -214,8 +220,9 @@ describe('when the result count cannot be read', () => {
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
 
     await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
-    // Page 2 returned an ad page 1 already had, so the walk stopped there.
-    expect(fetch).toHaveBeenCalledTimes(1);
+    // Page 1 is fetched under the pinned sort, page 2 returns the same ad, and
+    // the walk stops there.
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   it('stops when a page comes back with no ads, as a challenge page does', async () => {
@@ -228,6 +235,7 @@ describe('when the result count cannot be read', () => {
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
 
     await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
+    // Nothing usable on the very first page, so nothing further is asked for.
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(document.querySelectorAll('li').length).toBeGreaterThan(0);
   });
@@ -267,17 +275,32 @@ describe('when the search spans more pages than leboncoin will serve', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('never re-fetches page 1, which is already on screen', async () => {
+  it('pins an explicit sort so the pages tile the result set', async () => {
+    // Relevance is re-ranked with a pivot between requests, so an ad on page 1
+    // can be on page 2 a second later. Walking those pages returns some ads
+    // twice and misses others: a 62 result search collected 50 that way. Page 1
+    // is fetched too now, because it has to be read under the same sort as the
+    // rest.
     renderSearchPage(pageOf(105)); // 3 pages
     vi.mocked(fetch).mockImplementation(async () => freshPage());
 
     makeSorter().syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
 
-    const urls = vi.mocked(fetch).mock.calls.map(([url]) => String(url));
-    expect(urls.some((url) => url.includes('page=2'))).toBe(true);
-    expect(urls.some((url) => url.includes('page=1'))).toBe(false);
+    const urls = vi.mocked(fetch).mock.calls.map(([url]) => new URL(String(url)));
+    expect(urls.every((url) => url.searchParams.get('sort') === 'price,asc')).toBe(true);
+    expect(urls.map((url) => url.searchParams.get('page'))).toEqual([null, '2', '3']);
+  });
+
+  it('does not fetch at all when one page holds every result', async () => {
+    renderSearchPage(pageOf(3));
+
+    makeSorter().syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await settle();
+
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
 
@@ -402,6 +425,37 @@ describe('when the walk stops before the advertised total', () => {
   });
 });
 
+describe('when the collection comes back short', () => {
+  it('blames leboncoin’s ceiling only when a ceiling applied', async () => {
+    // A 62 result search collected 50 and reported "leboncoin ne permet pas
+    // d'aller au-delà", which was untrue: nothing near their 100 page ceiling
+    // was reached. The shortfall was ours.
+    renderSearchPage(pageOf(70)); // 2 pages, well inside every ceiling
+    vi.mocked(fetch).mockImplementation(async () => freshPage());
+
+    makeSorter().syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
+
+    const summary = document.querySelector('[data-lbc-prix-m2-summary]')?.textContent ?? '';
+    expect(summary).toContain('annoncées');
+    expect(summary).not.toContain('ne permet pas');
+  });
+
+  it('still blames the ceiling when the ceiling is the reason', async () => {
+    renderSearchPage(pageOf(217_762));
+    vi.mocked(fetch).mockImplementation(async () => freshPage());
+
+    makeSorter({ budgetPages: 2 }).syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
+
+    expect(document.querySelector('[data-lbc-prix-m2-summary]')?.textContent).toContain(
+      'ne permet pas',
+    );
+  });
+});
+
 describe('paging the sorted results', () => {
   /**
    * leboncoin's page size drives both how many pages we fetch and how many ads
@@ -426,7 +480,9 @@ describe('paging the sorted results', () => {
     const sorter = makeSorter();
     sorter.syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
-    await settle();
+    // The collection now fetches page 1 as well, so a single tick is not enough
+    // for it to finish. Wait for the thing under test to exist.
+    await vi.waitFor(() => expect(pager()).not.toBeNull());
     return sorter;
   }
 

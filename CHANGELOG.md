@@ -16,6 +16,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - A banner above the results saying what was actually sorted, including when
   the result set is larger than leboncoin will paginate. See
   [ADR 0007](docs/adr/0007-collect-pages-to-sort-by-price-per-area.md).
+- An explicit sort is pinned while collecting, so the pages tile the result set
+  instead of overlapping. Relevance ordering is re-ranked between requests,
+  which made a 62 result search collect 50.
 - Client-side pagination of the sorted results, using leboncoin's own page
   size. Turning a page is a slice of the collected set, so nothing is fetched
   and the sort survives. leboncoin's own pager is hidden while this is active

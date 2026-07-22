@@ -101,6 +101,7 @@ describe('planFetch', () => {
       reachable: 74,
       total: 74,
       complete: true,
+      capped: false,
     });
   });
 
@@ -113,6 +114,7 @@ describe('planFetch', () => {
       reachable: 700,
       total: 217_762,
       complete: false,
+      capped: true,
     });
   });
 
@@ -131,13 +133,39 @@ describe('planFetch', () => {
     // producing new ads, which is the only signal available without a total.
     const plan = planFetch({ total: null, perPage: 35, maxPages: 100 }, 20);
 
-    expect(plan).toEqual({ pages: 20, perPage: 35, reachable: null, total: null, complete: false });
+    expect(plan).toEqual({
+      pages: 20,
+      perPage: 35,
+      reachable: null,
+      total: null,
+      complete: false,
+      capped: false,
+    });
   });
 
   it('never claims to reach more ads than exist', () => {
     const plan = planFetch({ total: 10, perPage: 35, maxPages: 100 }, 20);
 
-    expect(plan).toEqual({ pages: 1, perPage: 35, reachable: 10, total: 10, complete: true });
+    expect(plan).toEqual({
+      pages: 1,
+      perPage: 35,
+      reachable: 10,
+      total: 10,
+      complete: true,
+      capped: false,
+    });
+  });
+});
+
+describe('planFetch capped flag', () => {
+  it('is false when the whole search fits, so a shortfall is not blamed on leboncoin', () => {
+    // A 62 result search once reported "leboncoin ne permet pas d'aller
+    // au-delà" after collecting 50. Nothing near their ceiling was involved.
+    expect(planFetch({ total: 62, perPage: 35, maxPages: 100 }, 100).capped).toBe(false);
+  });
+
+  it('is true when a ceiling really did cut the plan short', () => {
+    expect(planFetch({ total: 217_762, perPage: 35, maxPages: 100 }, 100).capped).toBe(true);
   });
 });
 
@@ -154,6 +182,27 @@ describe('pageUrl', () => {
 
   it('replaces an existing page parameter rather than appending one', () => {
     expect(pageUrl(`${search}&page=7`, 2)).toBe(`${search}&page=2`);
+  });
+
+  it('pins the sort when asked, so the pages tile the result set', () => {
+    // Relevance is re-ranked between requests, so page N does not mean the same
+    // thing twice. An explicit sort is what makes a walk cover the set once.
+    const url = new URL(pageUrl(search, 2, 'price,asc'));
+
+    expect(url.searchParams.get('sort')).toBe('price,asc');
+    expect(url.searchParams.get('page')).toBe('2');
+  });
+
+  it('replaces a sort the reader had already chosen', () => {
+    const url = new URL(pageUrl(`${search}&sort=time,desc`, 1, 'price,asc'));
+
+    expect(url.searchParams.get('sort')).toBe('price,asc');
+  });
+
+  it('leaves the sort alone when none is pinned', () => {
+    expect(new URL(pageUrl(`${search}&sort=time,desc`, 2)).searchParams.get('sort')).toBe(
+      'time,desc',
+    );
   });
 
   it('keeps every other search filter intact', () => {

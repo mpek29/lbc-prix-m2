@@ -117,6 +117,13 @@ export interface FetchPlan {
   readonly total: number | null;
   /** True only when the plan provably covers every result. */
   readonly complete: boolean;
+  /**
+   * True when a ceiling cut the plan short, rather than the search being small.
+   *
+   * Only then is "leboncoin will not paginate further" the reason a collection
+   * came back short. Saying it otherwise blames them for our own gaps.
+   */
+  readonly capped: boolean;
 }
 
 export function planFetch(pagination: Pagination, budgetPages: number): FetchPlan {
@@ -125,9 +132,10 @@ export function planFetch(pagination: Pagination, budgetPages: number): FetchPla
   const pages = known === null ? ceiling : Math.min(known, ceiling);
 
   const { perPage } = pagination;
+  const capped = known !== null && known > pages;
 
   if (pagination.total === null) {
-    return { pages, perPage, reachable: null, total: null, complete: false };
+    return { pages, perPage, reachable: null, total: null, complete: false, capped };
   }
 
   const reachable = Math.min(pages * perPage, pagination.total);
@@ -137,13 +145,29 @@ export function planFetch(pagination: Pagination, budgetPages: number): FetchPla
     reachable,
     total: pagination.total,
     complete: reachable >= pagination.total,
+    capped,
   };
 }
 
+/**
+ * A sort to pin while collecting, so the pages tile the result set.
+ *
+ * The default ordering is `relevance`, which is not a stable total order:
+ * leboncoin re-ranks with a pivot, so an ad on page 1 can be on page 2 a second
+ * later. Walking those pages returns some ads twice and misses others entirely,
+ * which is how a 62 result search collected 50.
+ *
+ * Any explicit sort is steadier than relevance. Price is used because every
+ * search offers it, and the order the pages arrive in does not matter: they are
+ * about to be sorted by price per square metre anyway.
+ */
+export const COLLECTION_SORT = 'price,asc';
+
 /** The same search, on another page. Page 1 carries no parameter. */
-export function pageUrl(current: string, page: number): string {
+export function pageUrl(current: string, page: number, sort?: string): string {
   const url = new URL(current);
   if (page <= 1) url.searchParams.delete('page');
   else url.searchParams.set('page', String(page));
+  if (sort !== undefined) url.searchParams.set('sort', sort);
   return url.toString();
 }
