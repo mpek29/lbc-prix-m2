@@ -19,6 +19,9 @@ coverage/
 .DS_Store
 Thumbs.db
 
+# Scratch space that never belongs in the repository: drafts, notes, exports.
+/private/
+
 # Local overrides & secrets
 *.local
 .env
