@@ -30,7 +30,7 @@ const optionLabels = () =>
 /**
  * The price sentence of each card, in list order.
  *
- * Deliberately not `li.querySelector('.sr-only')`: the rental card's first
+ * Not `li.querySelector('.sr-only')`: the rental card's first
  * screen-reader line is "Annonce déjà vue.", which is how the first draft of
  * this helper reported a correct sort as a failure.
  */
@@ -194,6 +194,90 @@ describe('when the search spans more pages than leboncoin will serve', () => {
     const urls = vi.mocked(fetch).mock.calls.map(([url]) => String(url));
     expect(urls.some((url) => url.includes('page=2'))).toBe(true);
     expect(urls.some((url) => url.includes('page=1'))).toBe(false);
+  });
+});
+
+describe('while it is collecting', () => {
+  const slowPage = () =>
+    new Promise<Response>((resolve) =>
+      setTimeout(
+        () =>
+          resolve(
+            new Response(`<html><body>${fixtureList('ad-card-rental')}</body></html>`, {
+              status: 200,
+            }),
+          ),
+        20,
+      ),
+    );
+
+  it('hides the stale order and shows how far along it is', async () => {
+    // Without this the reader spends several seconds looking at leboncoin's
+    // order in a list that looks finished, and reads it as the answer.
+    renderSearchPage(pageOf(105)); // 3 pages
+    vi.mocked(fetch).mockImplementation(slowPage);
+
+    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    const list = document.querySelector('ul[data-lbc-prix-m2-busy]');
+    expect(list).not.toBeNull();
+    expect(document.querySelector('[role="progressbar"]')).not.toBeNull();
+    expect(document.querySelector('[data-lbc-prix-m2-summary]')?.textContent).toContain(
+      'page 1 sur 3',
+    );
+
+    await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
+  });
+
+  it('shows the ads again and drops the bar when it finishes', async () => {
+    renderSearchPage(pageOf(105));
+    vi.mocked(fetch).mockImplementation(slowPage);
+
+    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
+
+    expect(document.querySelector('[role="progressbar"]')).toBeNull();
+    expect(document.querySelectorAll('li').length).toBeGreaterThan(0);
+  });
+
+  it('does not hide anything when there is nothing to fetch', () => {
+    // A single page of results is already in the DOM, so there is no wait to
+    // cover and a flash of hidden cards would be pure noise.
+    renderSearchPage(pageOf(3));
+
+    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull();
+  });
+
+  it('shows the ads again when the network fails', async () => {
+    // The failure mode that matters. A reader left with a blank list has lost
+    // the results entirely, which is far worse than an unsorted list.
+    renderSearchPage(pageOf(105));
+    vi.mocked(fetch).mockRejectedValue(new Error('offline'));
+
+    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
+    expect(document.querySelectorAll('li').length).toBeGreaterThan(0);
+    expect(document.querySelector('[data-lbc-prix-m2-summary]')?.textContent).toContain('échoué');
+  });
+
+  it('shows the ads again when the sort is abandoned mid-collection', async () => {
+    renderSearchPage(pageOf(105));
+    vi.mocked(fetch).mockImplementation(slowPage);
+    const sorter = createAreaSorter(document, logger, { delayMs: 0 });
+    sorter.syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    sorter.reset();
+
+    expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull();
+    expect(document.querySelectorAll('li').length).toBeGreaterThan(0);
   });
 });
 

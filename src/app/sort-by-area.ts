@@ -11,7 +11,13 @@ import { pageUrl, planFetch, readPagination, type FetchPlan } from '@/site/lebon
 import { fetchPages } from '@/platform/http';
 import type { Logger } from '@/platform/logger';
 import { createSortOption, findSortOptions, setOptionChecked, SORT_VALUE } from '@/ui/sort-option';
-import { createSortSummary, findSortSummary, updateSortSummary } from '@/ui/sort-summary';
+import {
+  createSortSummary,
+  findSortSummary,
+  setResultsBusy,
+  setSortProgress,
+  updateSortSummary,
+} from '@/ui/sort-summary';
 import { collectFrom, mergeUnique, type CollectedAd } from './collect-listings';
 
 /**
@@ -141,22 +147,58 @@ export function createAreaSorter(
 
     const pagination = readPagination(doc);
     const plan = pagination ? planFetch(pagination, budgetPages) : null;
+    const willFetch = (plan?.pages ?? 1) > 1;
 
-    showSummary(list, {
+    const summary = showSummary(list, {
       title: LABELS[next],
-      detail: plan ? `collecte de ${plan.pages} page(s)…` : 'tri des annonces affichées…',
+      detail: willFetch ? `collecte des annonces, page 1 sur ${plan?.pages}…` : 'tri des annonces…',
     });
 
-    const pages = plan ? await collect(plan, signal) : [collectFrom(doc, doc)];
-    if (signal.aborted) return;
+    // Nothing below may leave the list hidden. A reader looking at a blank page
+    // because a request failed has lost the results altogether, which is far
+    // worse than an unsorted list.
+    try {
+      if (willFetch && summary) {
+        setResultsBusy(list, true);
+        setSortProgress(summary, { done: 1, total: plan!.pages });
+      }
 
-    const ads = sortByPricePerArea(mergeUnique(pages), next);
-    render(list, ads);
-    showSummary(list, { title: LABELS[next], detail: describe(ads, plan) });
-    logger.debug('sorted', { direction: next, ads: ads.length, pages: pages.length });
+      const pages = plan
+        ? await collect(plan, signal, (done) => {
+            if (!summary) return;
+            setSortProgress(summary, { done, total: plan.pages });
+            updateSortSummary(summary, {
+              title: LABELS[next],
+              detail: `collecte des annonces, page ${done} sur ${plan.pages}…`,
+            });
+          })
+        : [collectFrom(doc, doc)];
+
+      if (signal.aborted) return;
+
+      const ads = sortByPricePerArea(mergeUnique(pages), next);
+      render(list, ads);
+      if (summary) updateSortSummary(summary, { title: LABELS[next], detail: describe(ads, plan) });
+      logger.debug('sorted', { direction: next, ads: ads.length, pages: pages.length });
+    } catch (error) {
+      logger.error('could not collect the pages of this search', error);
+      if (summary) {
+        updateSortSummary(summary, {
+          title: LABELS[next],
+          detail: 'la collecte a échoué, les annonces sont affichées sans tri.',
+        });
+      }
+    } finally {
+      setResultsBusy(list, false);
+      if (summary) setSortProgress(summary, null);
+    }
   }
 
-  async function collect(plan: FetchPlan, signal: AbortSignal): Promise<CollectedAd[][]> {
+  async function collect(
+    plan: FetchPlan,
+    signal: AbortSignal,
+    onProgress: (done: number) => void,
+  ): Promise<CollectedAd[][]> {
     // Page 1 is already on screen. Re-fetching it would be a wasted request and
     // would swap live cards for inert copies.
     const here = collectFrom(doc, doc);
@@ -164,7 +206,12 @@ export function createAreaSorter(
       pageUrl(doc.location.href, i + 2),
     );
 
-    const fetched = await fetchPages(urls, { delayMs, signal });
+    const fetched = await fetchPages(urls, {
+      delayMs,
+      signal,
+      // Page 1 was never fetched, so the count starts at one ahead.
+      onPage: (_doc, index) => onProgress(index + 2),
+    });
     return [here, ...fetched.map((page) => collectFrom(page, doc))];
   }
 
@@ -193,13 +240,16 @@ export function createAreaSorter(
     );
   }
 
-  function showSummary(list: Element, text: { title: string; detail: string }): void {
+  function showSummary(list: Element, text: { title: string; detail: string }): Element | null {
     const existing = findSortSummary(doc);
     if (existing) {
       updateSortSummary(existing, text);
-      return;
+      return existing;
     }
-    list.parentElement?.insertBefore(createSortSummary(doc, text), list);
+
+    const summary = createSortSummary(doc, text);
+    list.parentElement?.insertBefore(summary, list);
+    return summary;
   }
 
   // ── Undoing ───────────────────────────────────────────────────────────────
@@ -210,7 +260,10 @@ export function createAreaSorter(
     direction = null;
 
     const list = findResultsList(doc);
-    if (list && originalOrder) list.replaceChildren(...originalOrder);
+    if (list) {
+      setResultsBusy(list, false);
+      if (originalOrder) list.replaceChildren(...originalOrder);
+    }
     originalOrder = null;
 
     findSortSummary(doc)?.remove();

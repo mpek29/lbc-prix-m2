@@ -51,7 +51,7 @@ Fetch the search's own pages, sequentially, and sort what comes back.
 
 ## Consequences
 
-The good case is genuinely good. A filtered search is three requests and about a
+The good case is very good. A filtered search is three requests and about a
 second, and the resulting order is complete and correct.
 
 Three costs, all real.

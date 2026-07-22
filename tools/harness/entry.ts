@@ -29,6 +29,28 @@ results.innerHTML = fixtureList(
   'ad-card-no-price',
 );
 
+// `?pages=N` fakes a multi-page search on a slow connection, which is the only
+// way to see the loading state: with real fixtures everything is already here
+// and the sort finishes before a screenshot can catch it.
+const fakePages = Number(new URLSearchParams(location.search).get('pages') ?? 0);
+if (fakePages > 1) {
+  const totals = {
+    props: {
+      pageProps: { searchData: { total: fakePages * 35, max_pages: 100 }, search: { limit: 35 } },
+    },
+  };
+  const blob = document.createElement('script');
+  blob.id = '__NEXT_DATA__';
+  blob.type = 'application/json';
+  blob.textContent = JSON.stringify(totals);
+  document.body.append(blob);
+
+  window.fetch = () =>
+    new Promise((resolve) =>
+      setTimeout(() => resolve(new Response('<html><body></body></html>', { status: 200 })), 900),
+    );
+}
+
 const logger: Logger = {
   debug: (...args) => console.debug('[harness]', ...args),
   warn: (...args) => console.warn('[harness]', ...args),

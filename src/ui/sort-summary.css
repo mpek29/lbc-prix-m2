@@ -6,8 +6,8 @@
 
 .lbc-prix-m2-summary[data-lbc-prix-m2-summary] {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-items: baseline;
   box-sizing: border-box;
   margin: 0 0 12px;
   padding: 10px 12px;
@@ -17,6 +17,53 @@
   color: #111827;
   font-size: 13px;
   line-height: 1.45;
+}
+
+[data-lbc-prix-m2-summary] .lbc-prix-m2-summary__line {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+/*
+ * Determinate bar. The page count is known before the first request, so a
+ * spinner would throw away the one thing the reader wants to know: whether this
+ * is a two second wait or a ten second one.
+ */
+[data-lbc-prix-m2-summary] .lbc-prix-m2-summary__track {
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+[data-lbc-prix-m2-summary] .lbc-prix-m2-summary__bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #ff6e14;
+  transition: width 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-lbc-prix-m2-summary] .lbc-prix-m2-summary__bar {
+    transition: none;
+  }
+}
+
+/*
+ * While a sort is collecting, the list still holds leboncoin's order. Given a
+ * few seconds with a finished-looking list, a reader will read it, so the cards
+ * are hidden until the real answer is ready.
+ *
+ * `display: none` rather than `visibility: hidden`: leaving a screen of blank
+ * space reads as a broken page, whereas a list that collapses to the progress
+ * bar reads as work in progress.
+ */
+[data-lbc-prix-m2-busy] > * {
+  display: none;
 }
 
 .lbc-prix-m2-summary__title {

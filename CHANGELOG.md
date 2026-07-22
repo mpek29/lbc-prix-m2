@@ -16,6 +16,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - A banner above the results saying what was actually sorted, including when
   the result set is larger than leboncoin will paginate. See
   [ADR 0007](docs/adr/0007-collect-pages-to-sort-by-price-per-area.md).
+- A progress bar while the pages are being collected, with the ad cards hidden
+  until the sorted order is ready. Collecting takes seconds, and until it
+  finishes the list still holds leboncoin's order, which reads as a finished
+  result. The cards come back whatever happens, including when a request fails
+  or the sort is abandoned partway.
 
 ## [0.1.0] - 2026-07-21
 
