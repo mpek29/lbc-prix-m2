@@ -48,34 +48,35 @@ export async function fetchDocument(url: string, signal?: AbortSignal): Promise<
 }
 
 /**
- * Fetches pages in order, pausing between them.
+ * Yields pages in order, pausing between them.
  *
- * Stops at the first failure rather than pressing on. A 429 or a CAPTCHA
- * redirect means the site is asking us to stop, and the polite reading of that
- * is to stop, keep what we already have, and tell the reader.
+ * A generator rather than a list, so the caller can stop the moment a page
+ * stops being useful. That matters more than it sounds: leboncoin sits behind
+ * DataDome, and a challenge arrives as a perfectly valid 200 with no ads in it.
+ * Something has to notice that and stop asking, and only the caller can tell an
+ * empty page from a blocked one.
  *
- * @returns the documents fetched before stopping, which may be fewer than asked
- * for.
+ * Stops at the first hard failure too. A 429 means the site is asking us to
+ * stop, and the polite reading of that is to stop, keep what we have, and tell
+ * the reader.
  */
-export async function fetchPages(
+export async function* fetchPagesSequentially(
   urls: readonly string[],
   options: FetchPagesOptions,
-): Promise<Document[]> {
-  const documents: Document[] = [];
-
+): AsyncGenerator<Document> {
   for (const [index, url] of urls.entries()) {
-    if (options.signal?.aborted) break;
+    if (options.signal?.aborted) return;
     if (index > 0) await sleep(options.delayMs, options.signal);
 
+    let doc: Document;
     try {
-      const doc = await fetchDocument(url, options.signal);
-      documents.push(doc);
-      options.onPage?.(doc, index);
+      doc = await fetchDocument(url, options.signal);
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') break;
+      if (error instanceof DOMException && error.name === 'AbortError') return;
       throw error;
     }
-  }
 
-  return documents;
+    options.onPage?.(doc, index);
+    yield doc;
+  }
 }

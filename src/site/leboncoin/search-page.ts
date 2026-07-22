@@ -1,36 +1,52 @@
+import { parseFrenchNumber } from '@/core/parse/number';
+
 /**
  * How many results a search has, and where the rest of them live.
  *
  * Sorting by price per square metre cannot be delegated to leboncoin: their
  * sort parameter offers relevance, date and price, and nothing that divides one
- * by the other. So the extension has to gather the results itself, which means
- * knowing up front how many there are and how many pages that is.
+ * by the other. So the extension gathers the results itself, which is easier
+ * when it knows how many there are.
+ *
+ * "Easier", not "possible". The first version of this file read the totals out
+ * of `__NEXT_DATA__` and gave up when it could not, which quietly turned the
+ * whole feature into a single-page sort on a real browser while working
+ * perfectly against a fetched copy of the same URL. Now the totals are a
+ * convenience: they make the progress bar exact and let the banner state
+ * coverage. Without them the collection still runs, walking pages until one
+ * comes back empty.
  */
 
-/**
- * Read from `__NEXT_DATA__`, the JSON blob Next.js leaves in the page.
- *
- * This is leboncoin's internal shape rather than a public contract, so every
- * field is checked and any surprise degrades to `null`. Losing the totals costs
- * us the multi-page sort, not the extension.
- */
+/** leboncoin's page size. Only used when we cannot read the real one. */
+const ASSUMED_PER_PAGE = 35;
+
+/** leboncoin refuses to paginate past this. Only used as a fallback. */
+const ASSUMED_MAX_PAGES = 100;
+
 export interface Pagination {
-  /** Results matching the search, which can be in the hundreds of thousands. */
-  readonly total: number;
-  /** Results per page. 35 at the time of writing. */
+  /** Results matching the search, or `null` when we could not read a count. */
+  readonly total: number | null;
   readonly perPage: number;
-  /** leboncoin refuses to paginate past this. 100 at the time of writing. */
   readonly maxPages: number;
 }
 
 const NEXT_DATA = 'script#__NEXT_DATA__';
 
+/** `217 762 annonces` as rendered on the page, in any of France's spacings. */
+const RESULT_COUNT = /(\d[\d\s]*)\s*(annonces?|résultats?)\b/i;
+
 const isPositiveInt = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value > 0;
 
-export function readPagination(doc: Document): Pagination | null {
+/**
+ * Totals from `__NEXT_DATA__`, the JSON Next.js leaves in the page.
+ *
+ * Their internal shape, so every field is checked and anything unexpected reads
+ * as absent.
+ */
+function readFromNextData(doc: Document): Partial<Pagination> {
   const raw = doc.querySelector(NEXT_DATA)?.textContent;
-  if (!raw) return null;
+  if (!raw) return {};
 
   try {
     const props = JSON.parse(raw)?.props?.pageProps;
@@ -38,38 +54,72 @@ export function readPagination(doc: Document): Pagination | null {
     const maxPages = props?.searchData?.max_pages;
     const perPage = props?.search?.limit;
 
-    if (!isPositiveInt(total) || !isPositiveInt(maxPages) || !isPositiveInt(perPage)) return null;
-
-    return { total, perPage, maxPages };
+    return {
+      ...(isPositiveInt(total) ? { total } : {}),
+      ...(isPositiveInt(maxPages) ? { maxPages } : {}),
+      ...(isPositiveInt(perPage) ? { perPage } : {}),
+    };
   } catch {
-    return null;
+    return {};
   }
 }
 
-/** Pages the search actually has, ignoring leboncoin's ceiling. */
-export function pageCount(pagination: Pagination): number {
-  return Math.ceil(pagination.total / pagination.perPage);
+/**
+ * The count leboncoin prints for the reader, such as "217 762 annonces".
+ *
+ * Preferred over the JSON for the same reason the ad reader prefers ARIA: this
+ * is text leboncoin has to keep correct because people read it, whereas
+ * `__NEXT_DATA__` is a private structure that owes us nothing.
+ */
+export function readResultCount(doc: Document): number | null {
+  const match = RESULT_COUNT.exec(doc.body?.textContent ?? '');
+  if (!match?.[1]) return null;
+
+  const value = parseFrenchNumber(match[1]);
+  return value !== null && value > 0 ? value : null;
 }
 
 /**
- * Pages we are willing to fetch, and what that leaves out.
+ * Best effort, and never `null`.
  *
- * Two ceilings apply. leboncoin refuses to serve past `maxPages`, and we refuse
- * to make more requests than `budgetPages` because a search with six thousand
- * pages is not worth six thousand requests to anybody.
+ * A missing total means the collection walks until a page comes back empty
+ * rather than not running at all.
  */
+export function readPagination(doc: Document): Pagination {
+  const fromJson = readFromNextData(doc);
+
+  return {
+    total: fromJson.total ?? readResultCount(doc),
+    perPage: fromJson.perPage ?? ASSUMED_PER_PAGE,
+    maxPages: fromJson.maxPages ?? ASSUMED_MAX_PAGES,
+  };
+}
+
+/** Pages the search has, or `null` when the total is unknown. */
+export function pageCount(pagination: Pagination): number | null {
+  return pagination.total === null ? null : Math.ceil(pagination.total / pagination.perPage);
+}
+
 export interface FetchPlan {
+  /** Pages we are prepared to ask for. An upper bound, not a promise. */
   readonly pages: number;
-  readonly reachable: number;
-  readonly total: number;
-  /** True when the plan covers every result, so the sort is the real thing. */
+  /** Ads that many pages can hold, or `null` when the total is unknown. */
+  readonly reachable: number | null;
+  readonly total: number | null;
+  /** True only when the plan provably covers every result. */
   readonly complete: boolean;
 }
 
 export function planFetch(pagination: Pagination, budgetPages: number): FetchPlan {
-  const pages = Math.min(pageCount(pagination), pagination.maxPages, budgetPages);
-  const reachable = Math.min(pages * pagination.perPage, pagination.total);
+  const ceiling = Math.min(pagination.maxPages, budgetPages);
+  const known = pageCount(pagination);
+  const pages = known === null ? ceiling : Math.min(known, ceiling);
 
+  if (pagination.total === null) {
+    return { pages, reachable: null, total: null, complete: false };
+  }
+
+  const reachable = Math.min(pages * pagination.perPage, pagination.total);
   return { pages, reachable, total: pagination.total, complete: reachable >= pagination.total };
 }
 

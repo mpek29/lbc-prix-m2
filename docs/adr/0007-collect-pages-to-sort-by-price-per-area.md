@@ -32,12 +32,15 @@ patience or cleverness gets past a ceiling the server enforces.
 
 Fetch the search's own pages, sequentially, and sort what comes back.
 
-- **Read the totals first.** `__NEXT_DATA__` carries `total`, `max_pages` and
-  the page size, so the extension knows the shape of the job before making a
-  single request.
-- **Two ceilings.** leboncoin's `max_pages`, and our own budget of 20 pages
-  (700 ads). A search worth thousands of requests is a search that wants a
-  filter, not an extension.
+- **Walk, do not calculate.** Keep requesting pages until one produces no ad we
+  did not already have. That single rule ends the walk whether the results ran
+  out, leboncoin clamped the page number, or DataDome served a challenge.
+- **Totals are a convenience, not a requirement.** `__NEXT_DATA__` carries
+  `total` and `max_pages`, and the page prints the count for the reader. Either
+  makes the progress bar exact and lets the banner state coverage. Neither is
+  needed to run.
+- **One ceiling, and it is not ours.** leboncoin's `max_pages` is 100. The
+  extension's own budget matches it, so it fetches everything they will serve.
 - **Say which case you are in.** When the plan covers every result, the banner
   says so. When it cannot, it gives the real numbers rather than implying a
   complete ordering.
@@ -66,9 +69,16 @@ ads, and leboncoin's page links still refer to their own paging. Choosing one of
 their sort options resets everything, which is the escape hatch.
 
 **It is traffic they did not ask for.** Sequential and paced is the difference
-between reading a search quickly and hammering a site. If leboncoin ever
-signals that it is unwelcome, the budget is one constant and the feature is one
-directory.
+between reading a search quickly and hammering a site. A challenge page or a
+run of familiar ads both stop the walk, so a site that says no is not asked
+twice. If leboncoin ever signals that the whole thing is unwelcome, the budget
+is one constant and the feature is one directory.
+
+**Depending on `__NEXT_DATA__` was a mistake worth recording.** The first
+version read the totals out of it and gave up when it could not, which passed
+every test and worked against a fetched copy of the same URL, while degrading to
+a single-page sort in a real browser. Tests that fetch their own fixtures cannot
+catch a difference between a fetched page and a rendered one.
 
 The alternative considered and rejected was sorting only the ads already on
 screen. It costs nothing and is defensible, but sorting 35 of 74 results when

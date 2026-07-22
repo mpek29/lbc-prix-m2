@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pageCount, pageUrl, planFetch, readPagination } from './search-page';
+import { pageCount, pageUrl, planFetch, readPagination, readResultCount } from './search-page';
 
 /** The shape leboncoin actually serves, trimmed to the fields we read. */
 function pageWithNextData(searchData: unknown, search: unknown = { limit: 35 }): Document {
@@ -35,11 +35,53 @@ describe('readPagination', () => {
     ],
     ['a missing total', pageWithNextData({ max_pages: 100 })],
     ['a total that is not a number', pageWithNextData({ total: 'many', max_pages: 100 })],
-    ['a missing page size', pageWithNextData({ total: 74, max_pages: 3 }, {})],
-  ])('degrades to null on %s', (_label, doc) => {
-    // leboncoin owes us nothing here: __NEXT_DATA__ is their internal shape.
-    // Losing it costs the multi-page sort, not the extension.
-    expect(readPagination(doc)).toBeNull();
+  ])('still reports a usable plan with %s', (_label, doc) => {
+    // The first version returned null here and the caller quietly degraded to
+    // sorting one page. That is what shipped, and it is what the reader saw:
+    // "35 annonces affichées triées" on a search with thousands of results.
+    // An unknown total now means "walk until the pages run out", not "give up".
+    expect(readPagination(doc)).toEqual({ total: null, perPage: 35, maxPages: 100 });
+  });
+
+  it('falls back to the count leboncoin prints for the reader', () => {
+    // Preferred over the JSON for the same reason the ad reader prefers ARIA:
+    // this text has to stay correct because people read it.
+    const doc = document.implementation.createHTMLDocument();
+    doc.body.innerHTML = '<h1>Locations</h1><p>217 762 annonces</p>';
+
+    expect(readPagination(doc).total).toBe(217_762);
+  });
+
+  it('prefers the JSON when both are present', () => {
+    const doc = pageWithNextData({ total: 74, max_pages: 3 });
+    doc.body.insertAdjacentHTML('afterbegin', '<p>217 762 annonces</p>');
+
+    expect(readPagination(doc).total).toBe(74);
+  });
+});
+
+describe('readResultCount', () => {
+  it.each([
+    ['a plain space', '217 762 annonces', 217_762],
+    ['a narrow no-break space', '217 762 annonces', 217_762],
+    ['a small result set', '74 annonces', 74],
+    ['the singular', '1 annonce', 1],
+    ['the word résultats', '512 résultats', 512],
+  ])('reads a count written with %s', (_label, text, expected) => {
+    const doc = document.implementation.createHTMLDocument();
+    doc.body.textContent = text;
+
+    expect(readResultCount(doc)).toBe(expected);
+  });
+
+  it.each([
+    ['a page with no count on it', 'Déposer une annonce'],
+    ['an empty page', ''],
+  ])('returns null for %s', (_label, text) => {
+    const doc = document.implementation.createHTMLDocument();
+    doc.body.textContent = text;
+
+    expect(readResultCount(doc)).toBeNull();
   });
 });
 
@@ -75,6 +117,14 @@ describe('planFetch', () => {
     expect(plan.pages).toBe(100);
     expect(plan.reachable).toBe(3500);
     expect(plan.complete).toBe(false);
+  });
+
+  it('plans for the full ceiling when the total is unknown', () => {
+    // Nothing is claimed about coverage here. The walk stops when a page stops
+    // producing new ads, which is the only signal available without a total.
+    const plan = planFetch({ total: null, perPage: 35, maxPages: 100 }, 20);
+
+    expect(plan).toEqual({ pages: 20, reachable: null, total: null, complete: false });
   });
 
   it('never claims to reach more ads than exist', () => {

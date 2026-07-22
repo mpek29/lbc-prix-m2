@@ -8,7 +8,7 @@ import {
 } from '@/site/leboncoin/sort-control';
 import { findResultsList } from '@/site/leboncoin/results-list';
 import { pageUrl, planFetch, readPagination, type FetchPlan } from '@/site/leboncoin/search-page';
-import { fetchPages } from '@/platform/http';
+import { fetchPagesSequentially } from '@/platform/http';
 import type { Logger } from '@/platform/logger';
 import { createSortOption, findSortOptions, setOptionChecked, SORT_VALUE } from '@/ui/sort-option';
 import {
@@ -28,16 +28,25 @@ import { collectFrom, mergeUnique, type CollectedAd } from './collect-listings';
  * result set by €/m² is to hold the whole result set, which means fetching the
  * pages ourselves.
  *
- * Two ceilings shape everything here. leboncoin refuses to paginate past 100
- * pages, so 217 762 rentals can never be fully sorted by anybody. And we refuse
- * to make more requests than `BUDGET_PAGES`, because a search worth thousands
- * of requests is a search that wants a filter, not an extension.
+ * The collection walks pages until they stop producing new ads, so it does not
+ * depend on knowing the result count. It used to, reading the total out of
+ * `__NEXT_DATA__` and quietly falling back to sorting one page when it could
+ * not, which is what shipped and what a reader saw as a broken feature.
  *
- * Where the sort is complete, it says so. Where it is not, it says that too.
+ * One ceiling is not ours: leboncoin refuses to paginate past 100 pages, so a
+ * search with 217 762 matches can never be fully ordered by anybody. Where the
+ * sort is complete it says so, and where it is not it says that too.
  */
 
-/** Requests we are willing to make for one sort. 20 pages is 700 ads. */
-const BUDGET_PAGES = 20;
+/**
+ * Requests we are willing to make for one sort.
+ *
+ * 100 is leboncoin's own ceiling, so this is "everything they will serve".
+ * At roughly a second and a half per page that is a long wait on a broad
+ * search, which is why the progress bar is determinate and the whole run can be
+ * abandoned by picking another sort.
+ */
+const BUDGET_PAGES = 100;
 
 /** Pause between requests. Sequential and unhurried, so we look like a reader. */
 const DELAY_MS = 350;
@@ -145,13 +154,12 @@ export function createAreaSorter(
 
     originalOrder ??= Array.from(list.children);
 
-    const pagination = readPagination(doc);
-    const plan = pagination ? planFetch(pagination, budgetPages) : null;
-    const willFetch = (plan?.pages ?? 1) > 1;
+    const plan = planFetch(readPagination(doc), budgetPages);
+    const willFetch = plan.pages > 1;
 
     const summary = showSummary(list, {
       title: LABELS[next],
-      detail: willFetch ? `collecte des annonces, page 1 sur ${plan?.pages}…` : 'tri des annonces…',
+      detail: willFetch ? `collecte des annonces, page 1 sur ${plan.pages}…` : 'tri des annonces…',
     });
 
     // Nothing below may leave the list hidden. A reader looking at a blank page
@@ -160,25 +168,28 @@ export function createAreaSorter(
     try {
       if (willFetch && summary) {
         setResultsBusy(list, true);
-        setSortProgress(summary, { done: 1, total: plan!.pages });
+        setSortProgress(summary, { done: 1, total: plan.pages });
       }
 
-      const pages = plan
-        ? await collect(plan, signal, (done) => {
-            if (!summary) return;
-            setSortProgress(summary, { done, total: plan.pages });
-            updateSortSummary(summary, {
-              title: LABELS[next],
-              detail: `collecte des annonces, page ${done} sur ${plan.pages}…`,
-            });
-          })
-        : [collectFrom(doc, doc)];
+      const { pages, stoppedEarly } = await collect(plan, signal, (done) => {
+        if (!summary) return;
+        setSortProgress(summary, { done, total: plan.pages });
+        updateSortSummary(summary, {
+          title: LABELS[next],
+          detail: `collecte des annonces, page ${done} sur ${plan.pages}…`,
+        });
+      });
 
       if (signal.aborted) return;
 
       const ads = sortByPricePerArea(mergeUnique(pages), next);
       render(list, ads);
-      if (summary) updateSortSummary(summary, { title: LABELS[next], detail: describe(ads, plan) });
+      if (summary) {
+        updateSortSummary(summary, {
+          title: LABELS[next],
+          detail: describe(ads, plan, { pagesRead: pages.length, stoppedEarly }),
+        });
+      }
       logger.debug('sorted', { direction: next, ads: ads.length, pages: pages.length });
     } catch (error) {
       logger.error('could not collect the pages of this search', error);
@@ -194,25 +205,55 @@ export function createAreaSorter(
     }
   }
 
+  /**
+   * Walks the search's pages until they stop producing anything new.
+   *
+   * The stop condition is "this page contributed no ad we did not already
+   * have", which covers every way a walk can end with one rule:
+   *
+   * - the results ran out, and the page comes back empty;
+   * - leboncoin clamped a too-high page number back to one we have already
+   *   read, so the request succeeds and returns familiar ads;
+   * - DataDome served a challenge, which arrives as a valid 200 with no ads.
+   *
+   * Counting only new ads matters because the plan is an upper bound. When the
+   * total is unknown it is the full ceiling, and a one-page search would
+   * otherwise spend a hundred requests rediscovering the same 35 ads.
+   */
   async function collect(
     plan: FetchPlan,
     signal: AbortSignal,
     onProgress: (done: number) => void,
-  ): Promise<CollectedAd[][]> {
+  ): Promise<{ pages: CollectedAd[][]; stoppedEarly: boolean }> {
     // Page 1 is already on screen. Re-fetching it would be a wasted request and
     // would swap live cards for inert copies.
-    const here = collectFrom(doc, doc);
+    const first = collectFrom(doc, doc);
+    const pages: CollectedAd[][] = [first];
+    const seen = new Set(first.map((ad) => ad.id).filter((id): id is string => id !== null));
+
     const urls = Array.from({ length: plan.pages - 1 }, (_, i) =>
       pageUrl(doc.location.href, i + 2),
     );
 
-    const fetched = await fetchPages(urls, {
-      delayMs,
-      signal,
-      // Page 1 was never fetched, so the count starts at one ahead.
-      onPage: (_doc, index) => onProgress(index + 2),
-    });
-    return [here, ...fetched.map((page) => collectFrom(page, doc))];
+    let stoppedEarly = false;
+    let read = 1;
+
+    for await (const fetched of fetchPagesSequentially(urls, { delayMs, signal })) {
+      const ads = collectFrom(fetched, doc);
+      const fresh = ads.filter((ad) => ad.id === null || !seen.has(ad.id));
+
+      if (fresh.length === 0) {
+        stoppedEarly = true;
+        logger.debug('stopped: a page produced nothing new', { page: read + 1 });
+        break;
+      }
+
+      for (const ad of fresh) if (ad.id !== null) seen.add(ad.id);
+      pages.push(fresh);
+      onProgress((read += 1));
+    }
+
+    return { pages, stoppedEarly };
   }
 
   function render(list: Element, ads: readonly CollectedAd[]): void {
@@ -221,7 +262,11 @@ export function createAreaSorter(
     list.replaceChildren(fragment);
   }
 
-  function describe(ads: readonly CollectedAd[], plan: FetchPlan | null): string {
+  function describe(
+    ads: readonly CollectedAd[],
+    plan: FetchPlan,
+    run: { pagesRead: number; stoppedEarly: boolean },
+  ): string {
     const priced = ads.filter((ad) => ad.pricePerArea !== null);
     const cheapest = priced[0]?.pricePerArea;
     const range =
@@ -231,8 +276,17 @@ export function createAreaSorter(
           )} €/m².`
         : '';
 
-    if (!plan) return `${ads.length} annonces affichées triées.${range}`;
-    if (plan.complete) return `Les ${ads.length} annonces de cette recherche.${range}`;
+    const pages = `${run.pagesRead} page${run.pagesRead > 1 ? 's' : ''}`;
+
+    // Running out of pages means we hold everything reachable, whatever the
+    // advertised total said.
+    if (plan.complete || run.stoppedEarly) {
+      return `Les ${ads.length} annonces de cette recherche, sur ${pages}.${range}`;
+    }
+
+    if (plan.total === null) {
+      return `${ads.length} annonces collectées sur ${pages}.${range}`;
+    }
 
     return (
       `Les ${ads.length} premières sur ${plan.total.toLocaleString('fr-FR')} résultats. ` +

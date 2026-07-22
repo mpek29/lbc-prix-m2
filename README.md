@@ -109,13 +109,15 @@ which means holding the results to be ordered. Picking one of the €/m² option
 makes the extension walk the search's own pages, one request at a time, and sort
 what comes back.
 
-Two ceilings apply, and the banner above the results says which one you hit.
-leboncoin refuses to paginate past 100 pages, so a search with 217 762 matches
-cannot be fully ordered by anyone. And the extension stops at 20 pages of its
-own accord, because a search worth hundreds of requests wants a filter instead.
+It walks pages until they stop producing new ads, so it does not need to know
+the result count in advance. One ceiling is not ours to move: leboncoin refuses
+to paginate past 100 pages, so a search with 217 762 matches cannot be fully
+ordered by anyone. The banner above the results says whether you got everything
+or hit that wall.
 
 A filtered search, which is how people actually use the site, is usually three
-requests and a complete answer. Ads pulled from pages you have not visited are
+requests and a complete answer. A broad one takes a couple of minutes and is
+worth narrowing instead. Ads pulled from pages you have not visited are
 marked, and their photo carousel and favourite button do not work, because
 leboncoin's own code never ran on them.
 

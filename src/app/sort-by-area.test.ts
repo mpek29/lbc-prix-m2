@@ -8,13 +8,21 @@ import { createAreaSorter } from './sort-by-area';
 const logger: Logger = { debug: vi.fn(), warn: vi.fn(), error: vi.fn() };
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-/** A results page: the sort menu open, a list of ads, and the totals blob. */
-function renderSearchPage(nextData?: unknown) {
+/**
+ * A results page: the sort menu open, a list of ads, and the totals blob.
+ *
+ * The blob defaults to a single-page search so nothing fetches unless a test
+ * asks for it. Leaving it out entirely means "totals unknown", which is now a
+ * request to walk the pages, not a request to sort what is on screen.
+ */
+function renderSearchPage(nextData: unknown = pageOf(3)) {
+  // `null` means omit the blob. `undefined` cannot: passing it explicitly just
+  // re-triggers the default parameter, which cost an hour the first time.
   document.body.innerHTML = `
     ${fixture('sort-radiogroup')}
     ${fixtureList('ad-card-rental', 'ad-card-sale', 'ad-card-no-area')}
     ${
-      nextData === undefined
+      nextData === null
         ? ''
         : `<script id="__NEXT_DATA__" type="application/json">${JSON.stringify(nextData)}</script>`
     }`;
@@ -23,6 +31,35 @@ function renderSearchPage(nextData?: unknown) {
 const pageOf = (total: number) => ({
   props: { pageProps: { searchData: { total, max_pages: 100 }, search: { limit: 35 } } },
 });
+
+/**
+ * A fetched page whose ads are new every time.
+ *
+ * Returning the same fixture for every page is indistinguishable from
+ * leboncoin clamping a too-high page number, so the walk stops on page 2 and
+ * any test about multi-page collection measures nothing.
+ */
+const running: { reset(): void }[] = [];
+
+/**
+ * Builds a sorter and remembers it, so `afterEach` can abandon it.
+ *
+ * A test that stops waiting partway through a collection leaves the walk
+ * running, and its remaining requests land inside the next test. That produced
+ * a fetch count of 2 in a test that only ever fetched once.
+ */
+function makeSorter(options: { delayMs?: number; budgetPages?: number } = {}) {
+  const sorter = createAreaSorter(document, logger, { delayMs: 0, ...options });
+  running.push(sorter);
+  return sorter;
+}
+
+let pageSequence = 0;
+const freshPage = () => {
+  pageSequence += 1;
+  const html = fixtureList('ad-card-sale').replaceAll('2984110023', `90000000${pageSequence}`);
+  return new Response(`<html><body>${html}</body></html>`, { status: 200 });
+};
 
 const openMenu = () => findSortRadioGroup(document)!;
 const optionLabels = () =>
@@ -43,23 +80,25 @@ const listedPrices = () =>
 
 beforeEach(() => {
   renderSearchPage();
+  pageSequence = 0;
   vi.stubGlobal('fetch', vi.fn());
 });
 
 afterEach(() => {
+  for (const sorter of running.splice(0)) sorter.reset();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
 
 describe('the sort menu', () => {
   it('gains the two options', () => {
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
 
     expect(optionLabels()).toEqual(['Prix/m² croissant', 'Prix/m² décroissant']);
   });
 
   it('puts them inside leboncoin’s own group, after their options', () => {
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
 
     const labels = Array.from(openMenu().querySelectorAll('label'), (l) => l.textContent);
     expect(labels).toEqual([
@@ -74,7 +113,7 @@ describe('the sort menu', () => {
   });
 
   it('does not add them twice when the menu re-renders', () => {
-    const sorter = createAreaSorter(document, logger, { delayMs: 0 });
+    const sorter = makeSorter();
 
     sorter.syncMenu();
     sorter.syncMenu();
@@ -85,7 +124,7 @@ describe('the sort menu', () => {
   it('does nothing while the menu is closed', () => {
     document.body.innerHTML = fixtureList('ad-card-rental');
 
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
 
     expect(findSortOptions(document)).toHaveLength(0);
   });
@@ -93,7 +132,13 @@ describe('the sort menu', () => {
 
 describe('choosing an option', () => {
   it('reorders the ads by price per square metre', async () => {
-    const sorter = createAreaSorter(document, logger, { delayMs: 0 });
+    // The fixtures are laid out cheapest-first, so an ascending sort that never
+    // ran looks identical to one that worked. Reversing the list first makes
+    // the assertion mean something: it can only pass if the sort really ran.
+    const list = document.querySelector('ul')!;
+    list.replaceChildren(...Array.from(list.children).reverse());
+
+    const sorter = makeSorter();
     sorter.syncMenu();
 
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
@@ -105,7 +150,7 @@ describe('choosing an option', () => {
   });
 
   it('reverses for décroissant', async () => {
-    const sorter = createAreaSorter(document, logger, { delayMs: 0 });
+    const sorter = makeSorter();
     sorter.syncMenu();
 
     findSortOptions(document)[1]?.dispatchEvent(new Event('click', { bubbles: true }));
@@ -116,7 +161,7 @@ describe('choosing an option', () => {
   });
 
   it('clears leboncoin’s selection, so the menu shows one chosen option', async () => {
-    const sorter = createAreaSorter(document, logger, { delayMs: 0 });
+    const sorter = makeSorter();
     sorter.syncMenu();
 
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
@@ -130,7 +175,7 @@ describe('choosing an option', () => {
   });
 
   it('says what it sorted', async () => {
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
 
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
     await settle();
@@ -141,18 +186,61 @@ describe('choosing an option', () => {
   });
 });
 
-describe('when the search spans more pages than leboncoin will serve', () => {
-  it('admits the sort is partial rather than implying it covered everything', async () => {
-    // 217 762 rentals, 6 222 pages, and leboncoin stops at 100. No budget and
-    // no patience gets past that, so the banner has to say so.
-    renderSearchPage(pageOf(217_762));
-    // A fresh Response per call: a body can only be read once.
+describe('when the result count cannot be read', () => {
+  it('walks the pages instead of giving up and sorting one page', async () => {
+    // The bug this test exists for. The first version read the total out of
+    // __NEXT_DATA__ and silently degraded to a single-page sort when it could
+    // not, which is what shipped and what the reader saw.
+    renderSearchPage(null);
+    vi.mocked(fetch).mockImplementation(async () => freshPage());
+
+    makeSorter().syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+  });
+
+  it('stops as soon as a page produces nothing new', async () => {
+    // leboncoin can clamp a too-high page number back to one already read. With
+    // the total unknown the plan is the full ceiling, so without this a
+    // one-page search would spend a hundred requests on the same 35 ads.
+    renderSearchPage(null);
     vi.mocked(fetch).mockImplementation(
       async () =>
         new Response(`<html><body>${fixtureList('ad-card-rental')}</body></html>`, { status: 200 }),
     );
 
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
+    // Page 2 returned an ad page 1 already had, so the walk stopped there.
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops when a page comes back with no ads, as a challenge page does', async () => {
+    renderSearchPage(null);
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response('<html><body><div>captcha</div></body></html>', { status: 200 }),
+    );
+
+    makeSorter().syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(document.querySelectorAll('li').length).toBeGreaterThan(0);
+  });
+});
+
+describe('when the search spans more pages than leboncoin will serve', () => {
+  it('admits the sort is partial rather than implying it covered everything', async () => {
+    // 217 762 rentals, 6 222 pages, and leboncoin stops at 100. No budget and
+    // no patience gets past that, so the banner has to say so.
+    renderSearchPage(pageOf(217_762));
+    vi.mocked(fetch).mockImplementation(async () => freshPage());
+
+    makeSorter({ budgetPages: 20 }).syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
     // The group separator ICU picks for fr-FR is U+202F, not a plain space, so
     // the text is normalised before comparing. Same reason as format.test.ts.
@@ -168,7 +256,7 @@ describe('when the search spans more pages than leboncoin will serve', () => {
   it('reports a small search as complete', async () => {
     renderSearchPage(pageOf(3));
 
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
     await settle();
 
@@ -181,13 +269,9 @@ describe('when the search spans more pages than leboncoin will serve', () => {
 
   it('never re-fetches page 1, which is already on screen', async () => {
     renderSearchPage(pageOf(105)); // 3 pages
-    // A fresh Response per call: a body can only be read once.
-    vi.mocked(fetch).mockImplementation(
-      async () =>
-        new Response(`<html><body>${fixtureList('ad-card-rental')}</body></html>`, { status: 200 }),
-    );
+    vi.mocked(fetch).mockImplementation(async () => freshPage());
 
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
 
@@ -217,7 +301,7 @@ describe('while it is collecting', () => {
     renderSearchPage(pageOf(105)); // 3 pages
     vi.mocked(fetch).mockImplementation(slowPage);
 
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
 
     const list = document.querySelector('ul[data-lbc-prix-m2-busy]');
@@ -234,7 +318,7 @@ describe('while it is collecting', () => {
     renderSearchPage(pageOf(105));
     vi.mocked(fetch).mockImplementation(slowPage);
 
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
     await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
 
@@ -247,7 +331,7 @@ describe('while it is collecting', () => {
     // cover and a flash of hidden cards would be pure noise.
     renderSearchPage(pageOf(3));
 
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
 
     expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull();
@@ -259,7 +343,7 @@ describe('while it is collecting', () => {
     renderSearchPage(pageOf(105));
     vi.mocked(fetch).mockRejectedValue(new Error('offline'));
 
-    createAreaSorter(document, logger, { delayMs: 0 }).syncMenu();
+    makeSorter().syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
 
     await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
@@ -270,7 +354,7 @@ describe('while it is collecting', () => {
   it('shows the ads again when the sort is abandoned mid-collection', async () => {
     renderSearchPage(pageOf(105));
     vi.mocked(fetch).mockImplementation(slowPage);
-    const sorter = createAreaSorter(document, logger, { delayMs: 0 });
+    const sorter = makeSorter();
     sorter.syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -284,7 +368,7 @@ describe('while it is collecting', () => {
 describe('reset', () => {
   it('puts the list back in leboncoin’s order', async () => {
     const before = listedPrices();
-    const sorter = createAreaSorter(document, logger, { delayMs: 0 });
+    const sorter = makeSorter();
     sorter.syncMenu();
     findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
     await settle();
@@ -297,7 +381,7 @@ describe('reset', () => {
   });
 
   it('is harmless when nothing was sorted', () => {
-    const sorter = createAreaSorter(document, logger, { delayMs: 0 });
+    const sorter = makeSorter();
 
     expect(() => sorter.reset()).not.toThrow();
   });
