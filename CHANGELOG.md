@@ -7,6 +7,23 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-22
+
+### Added
+
+- Releases now carry a `.xpi` signed by Mozilla, which installs permanently on
+  release Firefox. A `.zip` can only ever be loaded as a temporary add-on that
+  disappears when the browser closes, which is Firefox policy rather than a
+  packaging choice. Signing is skipped when the credentials are absent, so a
+  fork still gets a working release.
+
+### Fixed
+
+- Release notes no longer wrap into a narrow column. GitHub renders release
+  bodies the way it renders comments, where a single newline is a line break,
+  so the text is now one line per paragraph.
+- Release notes describe the sort, which arrived in 0.2.0 and went unmentioned.
+
 ## [0.2.0] - 2026-07-22
 
 Sorting by price per square metre.
@@ -54,6 +71,7 @@ Initial release.
 - Console warning when every card on a page fails to yield a price, so a markup
   change on leboncoin's side gets reported instead of going unnoticed.
 
-[unreleased]: https://github.com/mpek29/lbc-prix-m2/compare/v0.2.0...HEAD
+[unreleased]: https://github.com/mpek29/lbc-prix-m2/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/mpek29/lbc-prix-m2/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/mpek29/lbc-prix-m2/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mpek29/lbc-prix-m2/releases/tag/v0.1.0

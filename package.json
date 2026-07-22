@@ -1,6 +1,6 @@
 {
   "name": "lbc-prix-m2",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Affiche le prix au mètre carré sur chaque annonce immobilière de leboncoin.",
   "license": "MIT",
