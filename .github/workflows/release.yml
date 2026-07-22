@@ -60,10 +60,15 @@ jobs:
           WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
         run: npm run sign:firefox
 
+      # AMO names the signed file after an internal identifier, something like
+      # 5311af59627749b69d2d-0.2.1.xpi, which tells a reader nothing about what
+      # they are downloading. Renamed to match the zips beside it.
       - name: Report whether a signed build exists
         id: signed
         run: |
-          if ls .output/signed/*.xpi >/dev/null 2>&1; then
+          xpi=$(ls .output/signed/*.xpi 2>/dev/null | head -1)
+          if [ -n "$xpi" ]; then
+            mv "$xpi" ".output/signed/lbc-prix-m2-${{ steps.meta.outputs.version }}-firefox.xpi"
             echo 'available=true' >> "$GITHUB_OUTPUT"
           else
             echo 'available=false' >> "$GITHUB_OUTPUT"
