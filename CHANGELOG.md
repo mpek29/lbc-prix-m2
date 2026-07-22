@@ -7,6 +7,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-22
+
+Sorting by price per square metre.
+
 ### Added
 
 - Two options in leboncoin's own sort menu: "Prix/m² croissant" and "Prix/m²
@@ -50,5 +54,6 @@ Initial release.
 - Console warning when every card on a page fails to yield a price, so a markup
   change on leboncoin's side gets reported instead of going unnoticed.
 
-[unreleased]: https://github.com/mpek29/lbc-prix-m2/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/mpek29/lbc-prix-m2/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/mpek29/lbc-prix-m2/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mpek29/lbc-prix-m2/releases/tag/v0.1.0
