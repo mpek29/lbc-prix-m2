@@ -7,12 +7,18 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-22
+
 ### Changed
 
 - Firefox releases carry the signed `.xpi` only. The unsigned zip is built on
   the way to signing but no longer published, since it installs as a temporary
   add-on that disappears when the browser closes. Signing credentials are now
   required for a release rather than optional.
+- GitHub Actions moved up a major: checkout, setup-node and upload-artifact to
+  v7, and action-gh-release to v3. The release workflow only runs on a tag, so
+  no pull request check could exercise the last of those. This release is what
+  proves it.
 
 ## [0.2.1] - 2026-07-22
 
@@ -78,7 +84,8 @@ Initial release.
 - Console warning when every card on a page fails to yield a price, so a markup
   change on leboncoin's side gets reported instead of going unnoticed.
 
-[unreleased]: https://github.com/mpek29/lbc-prix-m2/compare/v0.2.1...HEAD
+[unreleased]: https://github.com/mpek29/lbc-prix-m2/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/mpek29/lbc-prix-m2/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/mpek29/lbc-prix-m2/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/mpek29/lbc-prix-m2/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mpek29/lbc-prix-m2/releases/tag/v0.1.0
