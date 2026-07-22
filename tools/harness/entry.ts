@@ -14,6 +14,11 @@ import { createEnhancer } from '@/app/create-enhancer';
 import type { Logger } from '@/platform/logger';
 import { fixture, fixtureList } from '@/site/leboncoin/__fixtures__/load';
 
+// `?bare=1` hides the harness's own chrome, for capturing images of the
+// extension's controls without a debug heading in the frame.
+const view = new URLSearchParams(location.search);
+if (view.has('bare')) document.querySelector('h1')?.remove();
+
 const results = document.querySelector('#results');
 const menu = document.querySelector('#sort-menu');
 if (!results || !menu) throw new Error('harness: mount points missing');
@@ -88,6 +93,9 @@ harness.start();
 // leave the page byte-identical to how leboncoin served it, and
 // `harness.start()` must put it back.
 Object.assign(window, { harness });
+
+// After setup, not before: the menu holds the mount point the enhancer needs.
+if (view.has('nomenu')) document.querySelector('.menu')?.remove();
 
 // `?sort=asc` picks that option on load, so a screenshot can capture the sorted
 // state without anyone clicking. There is no leboncoin to page through here, so
