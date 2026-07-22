@@ -7,9 +7,11 @@ import {
   findSortRadioGroup,
 } from '@/site/leboncoin/sort-control';
 import { findResultsList } from '@/site/leboncoin/results-list';
+import { findPagination } from '@/site/leboncoin/pagination';
 import { pageUrl, planFetch, readPagination, type FetchPlan } from '@/site/leboncoin/search-page';
 import { fetchPagesSequentially } from '@/platform/http';
 import type { Logger } from '@/platform/logger';
+import { createPager, findPager, updatePager } from '@/ui/pager';
 import { createSortOption, findSortOptions, setOptionChecked, SORT_VALUE } from '@/ui/sort-option';
 import {
   createSortSummary,
@@ -79,9 +81,15 @@ export function createAreaSorter(
 ): AreaSorter {
   const budgetPages = options.budgetPages ?? BUDGET_PAGES;
   const delayMs = options.delayMs ?? DELAY_MS;
+  /** Marks leboncoin's pager while ours stands in for it. */
+  const NATIVE_PAGER_HIDDEN = 'data-lbc-prix-m2-pager-hidden';
+
   let direction: SortDirection | null = null;
   let originalOrder: Element[] | null = null;
   let run: AbortController | null = null;
+  /** The sorted result set, held so paging never refetches anything. */
+  let sorted: CollectedAd[] = [];
+  let pageSize = 35;
 
   // ── The menu ──────────────────────────────────────────────────────────────
 
@@ -183,7 +191,10 @@ export function createAreaSorter(
       if (signal.aborted) return;
 
       const ads = sortByPricePerArea(mergeUnique(pages), next);
-      render(list, ads);
+      sorted = ads;
+      pageSize = plan.perPage;
+      hideNativePagination();
+      showPage(list, 1);
       if (summary) {
         updateSortSummary(summary, {
           title: LABELS[next],
@@ -265,10 +276,60 @@ export function createAreaSorter(
     return { pages, stoppedEarly };
   }
 
-  function render(list: Element, ads: readonly CollectedAd[]): void {
+  /**
+   * Shows one page of the sorted results.
+   *
+   * Everything has already been collected, so paging is a slice of an array in
+   * memory. Nothing is fetched, nothing navigates, and the sort survives.
+   */
+  function showPage(list: Element, page: number): void {
+    const pages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    const clamped = Math.min(Math.max(page, 1), pages);
+    const start = (clamped - 1) * pageSize;
+
     const fragment = doc.createDocumentFragment();
-    for (const ad of ads) fragment.append(ad.item);
+    for (const ad of sorted.slice(start, start + pageSize)) fragment.append(ad.item);
     list.replaceChildren(fragment);
+
+    showPager(list, { page: clamped, pages });
+  }
+
+  function showPager(list: Element, state: { page: number; pages: number }): void {
+    const existing = findPager(doc);
+    if (existing) {
+      updatePager(existing, state);
+      return;
+    }
+
+    const pager = createPager(doc, {
+      ...state,
+      onSelect: (page) => {
+        const current = findResultsList(doc);
+        if (!current) return;
+        showPage(current, page);
+        // Paging without this leaves the reader at the scroll position of the
+        // page they just left, looking at the middle of a different list.
+        current.scrollIntoView({ block: 'start' });
+      },
+    });
+    list.after(pager);
+  }
+
+  /**
+   * Puts leboncoin's pager away while ours is in charge.
+   *
+   * Theirs describes a paging that no longer matches the list, and following it
+   * navigates off the page and discards the sort.
+   */
+  function hideNativePagination(): void {
+    const native = findPagination(doc);
+    if (native) native.setAttribute(NATIVE_PAGER_HIDDEN, '');
+  }
+
+  function restoreNativePagination(): void {
+    for (const element of doc.querySelectorAll(`[${NATIVE_PAGER_HIDDEN}]`)) {
+      element.removeAttribute(NATIVE_PAGER_HIDDEN);
+    }
   }
 
   function describe(
@@ -345,6 +406,10 @@ export function createAreaSorter(
       if (originalOrder) list.replaceChildren(...originalOrder);
     }
     originalOrder = null;
+    sorted = [];
+
+    findPager(doc)?.remove();
+    restoreNativePagination();
 
     findSortSummary(doc)?.remove();
     for (const row of findSortOptions(doc)) setOptionChecked(row, false);

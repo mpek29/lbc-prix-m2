@@ -117,7 +117,13 @@ or hit that wall.
 
 A filtered search, which is how people actually use the site, is usually three
 requests and a complete answer. A broad one takes a couple of minutes and is
-worth narrowing instead. Ads pulled from pages you have not visited are
+worth narrowing instead.
+
+The sorted results are shown a page at a time, using leboncoin's own page size,
+with the extension's own next and previous controls. Turning a page costs
+nothing: everything was collected up front, so it is a slice of a list already
+in memory. leboncoin's pager is hidden meanwhile, since it describes a paging
+the sorted list no longer follows. Ads pulled from pages you have not visited are
 marked, and their photo carousel and favourite button do not work, because
 leboncoin's own code never ran on them.
 

@@ -1,6 +1,7 @@
 import { observeMutations } from '@/platform/dom-observer';
 import type { Logger } from '@/platform/logger';
 import { isBadge } from '@/ui/price-badge';
+import { isPager } from '@/ui/pager';
 import { isSortOption } from '@/ui/sort-option';
 import { isSortSummary } from '@/ui/sort-summary';
 import { createAreaSorter } from './sort-by-area';
@@ -71,7 +72,7 @@ export function createEnhancer(doc: Document, logger: Logger): Enhancer {
  * every menu open.
  */
 function isOurs(node: Node): boolean {
-  return isBadge(node) || isSortOption(node) || isSortSummary(node);
+  return isBadge(node) || isSortOption(node) || isSortSummary(node) || isPager(node);
 }
 
 /**

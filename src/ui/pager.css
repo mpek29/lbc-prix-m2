@@ -1,0 +1,56 @@
+/*
+ * Same rules as the badge and the banner: namespaced selectors, fixed colours,
+ * its own background, and no `prefers-color-scheme` branch. See price-badge.css
+ * for why that last one is deliberate.
+ */
+
+.lbc-prix-m2-pager[data-lbc-prix-m2-pager] {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin: 16px 0;
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+  color: #111827;
+  font-size: 14px;
+}
+
+[data-lbc-prix-m2-pager] .lbc-prix-m2-pager__button {
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+[data-lbc-prix-m2-pager] .lbc-prix-m2-pager__button:hover:not(:disabled) {
+  border-color: #ff6e14;
+  color: #ff6e14;
+}
+
+[data-lbc-prix-m2-pager] .lbc-prix-m2-pager__button:focus-visible {
+  outline: 2px solid #ff6e14;
+  outline-offset: 2px;
+}
+
+[data-lbc-prix-m2-pager] .lbc-prix-m2-pager__button:disabled {
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: default;
+}
+
+[data-lbc-prix-m2-pager] .lbc-prix-m2-pager__status {
+  min-width: 8em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* leboncoin's own pager, while ours is in charge of a list it no longer describes. */
+[data-lbc-prix-m2-pager-hidden] {
+  display: none !important;
+}

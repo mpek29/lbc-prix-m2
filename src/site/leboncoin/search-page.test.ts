@@ -97,6 +97,7 @@ describe('planFetch', () => {
     // Concarneau rentals: 74 results, 3 pages, 3 requests, all of it.
     expect(planFetch({ total: 74, perPage: 35, maxPages: 100 }, 20)).toEqual({
       pages: 3,
+      perPage: 35,
       reachable: 74,
       total: 74,
       complete: true,
@@ -106,7 +107,13 @@ describe('planFetch', () => {
   it('stops at our own budget and admits the sort is partial', () => {
     const plan = planFetch({ total: 217_762, perPage: 35, maxPages: 100 }, 20);
 
-    expect(plan).toEqual({ pages: 20, reachable: 700, total: 217_762, complete: false });
+    expect(plan).toEqual({
+      pages: 20,
+      perPage: 35,
+      reachable: 700,
+      total: 217_762,
+      complete: false,
+    });
   });
 
   it('stops at leboncoin’s ceiling even when our budget is larger', () => {
@@ -124,13 +131,13 @@ describe('planFetch', () => {
     // producing new ads, which is the only signal available without a total.
     const plan = planFetch({ total: null, perPage: 35, maxPages: 100 }, 20);
 
-    expect(plan).toEqual({ pages: 20, reachable: null, total: null, complete: false });
+    expect(plan).toEqual({ pages: 20, perPage: 35, reachable: null, total: null, complete: false });
   });
 
   it('never claims to reach more ads than exist', () => {
     const plan = planFetch({ total: 10, perPage: 35, maxPages: 100 }, 20);
 
-    expect(plan).toEqual({ pages: 1, reachable: 10, total: 10, complete: true });
+    expect(plan).toEqual({ pages: 1, perPage: 35, reachable: 10, total: 10, complete: true });
   });
 });
 

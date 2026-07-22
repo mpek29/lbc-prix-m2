@@ -110,6 +110,8 @@ export function pageCount(pagination: Pagination): number | null {
 export interface FetchPlan {
   /** Pages we are prepared to ask for. An upper bound, not a promise. */
   readonly pages: number;
+  /** leboncoin's page size, reused so our own paging matches theirs. */
+  readonly perPage: number;
   /** Ads that many pages can hold, or `null` when the total is unknown. */
   readonly reachable: number | null;
   readonly total: number | null;
@@ -122,12 +124,20 @@ export function planFetch(pagination: Pagination, budgetPages: number): FetchPla
   const known = pageCount(pagination);
   const pages = known === null ? ceiling : Math.min(known, ceiling);
 
+  const { perPage } = pagination;
+
   if (pagination.total === null) {
-    return { pages, reachable: null, total: null, complete: false };
+    return { pages, perPage, reachable: null, total: null, complete: false };
   }
 
-  const reachable = Math.min(pages * pagination.perPage, pagination.total);
-  return { pages, reachable, total: pagination.total, complete: reachable >= pagination.total };
+  const reachable = Math.min(pages * perPage, pagination.total);
+  return {
+    pages,
+    perPage,
+    reachable,
+    total: pagination.total,
+    complete: reachable >= pagination.total,
+  };
 }
 
 /** The same search, on another page. Page 1 carries no parameter. */

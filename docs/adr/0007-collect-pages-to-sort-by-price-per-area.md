@@ -64,9 +64,14 @@ React never mounted, so their photo carousel and favourite button do nothing.
 They carry a marker and a small label saying where they came from, which is
 better than letting a dead button be discovered.
 
-**The page stops matching its own pagination.** The list now holds up to 700
-ads, and leboncoin's page links still refer to their own paging. Choosing one of
-their sort options resets everything, which is the escape hatch.
+**The page keeps its shape, but the paging is ours.** The collection holds every
+result at once, which is not how anyone wants to read several hundred ads, so
+the sorted set is shown a page at a time using leboncoin's own page size.
+Turning a page is a slice of an array already in memory: nothing is fetched and
+nothing navigates, so the sort survives. leboncoin's own pager is hidden while
+this is active, because it describes a paging that no longer matches the list
+and following it would discard the sort. Choosing one of their sort options
+restores it.
 
 **It is traffic they did not ask for.** Sequential and paced is the difference
 between reading a search quickly and hammering a site. A challenge page or a

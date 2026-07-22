@@ -33,10 +33,18 @@ results.innerHTML = fixtureList(
 // way to see the loading state: with real fixtures everything is already here
 // and the sort finishes before a screenshot can catch it.
 const fakePages = Number(new URLSearchParams(location.search).get('pages') ?? 0);
+// A tiny page size so a handful of fixtures still produces several pages to
+// walk and several to read.
+const perPage = Number(new URLSearchParams(location.search).get('perpage') ?? 4);
 if (fakePages > 1) {
   const totals = {
     props: {
-      pageProps: { searchData: { total: fakePages * 35, max_pages: 100 }, search: { limit: 35 } },
+      // A tiny page size so a handful of fixtures still produces several pages
+      // to walk and several to read.
+      pageProps: {
+        searchData: { total: fakePages * perPage, max_pages: 100 },
+        search: { limit: perPage },
+      },
     },
   };
   const blob = document.createElement('script');
@@ -45,9 +53,25 @@ if (fakePages > 1) {
   blob.textContent = JSON.stringify(totals);
   document.body.append(blob);
 
+  // Something for the extension to put away while its own pager is in charge.
+  document.body.insertAdjacentHTML(
+    'beforeend',
+    '<nav class="menu" style="text-align:center">leboncoin: <a href="?page=2">2</a> <a href="?page=3">3</a></nav>',
+  );
+
+  // Each fetched page carries ads the previous ones did not, or the walk stops
+  // on the first duplicate and there is nothing to page through.
+  let served = 0;
   window.fetch = () =>
     new Promise((resolve) =>
-      setTimeout(() => resolve(new Response('<html><body></body></html>', { status: 200 })), 900),
+      setTimeout(() => {
+        served += 1;
+        const html = fixtureList('ad-card-sale', 'ad-card-rental').replaceAll(
+          /\/ad\/[a-z_]+\/(\d+)/g,
+          (match) => `${match}${served}`,
+        );
+        resolve(new Response(`<html><body>${html}</body></html>`, { status: 200 }));
+      }, 250),
     );
 }
 

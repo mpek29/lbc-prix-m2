@@ -402,6 +402,100 @@ describe('when the walk stops before the advertised total', () => {
   });
 });
 
+describe('paging the sorted results', () => {
+  /**
+   * leboncoin's page size drives both how many pages we fetch and how many ads
+   * we show at a time, so a small size means the collection really does fetch.
+   */
+  const smallPages = (perPage: number, total: number) => ({
+    props: {
+      pageProps: { searchData: { total, max_pages: 100 }, search: { limit: perPage } },
+    },
+  });
+
+  const pager = () => document.querySelector('[data-lbc-prix-m2-pager]');
+  const shownPrices = () => listedPrices().filter(Boolean);
+
+  async function sortWithPageSize(perPage: number, total = 4) {
+    renderSearchPage(smallPages(perPage, total));
+    vi.mocked(fetch).mockImplementation(async () => freshPage());
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      '<nav id="native"><a href="?page=2">2</a><a href="?page=3">3</a></nav>',
+    );
+    const sorter = makeSorter();
+    sorter.syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await settle();
+    return sorter;
+  }
+
+  it('shows one page at a time instead of every ad at once', async () => {
+    await sortWithPageSize(2);
+
+    expect(shownPrices()).toHaveLength(2);
+    expect(pager()?.textContent).toContain('Page 1 sur 2');
+  });
+
+  it('moves to the next page without fetching anything', async () => {
+    await sortWithPageSize(2);
+    const before = vi.mocked(fetch).mock.calls.length;
+
+    pager()?.querySelector<HTMLButtonElement>('[data-role="next"]')?.click();
+
+    expect(pager()?.textContent).toContain('Page 2 sur 2');
+    // Everything was collected up front, so paging is a slice of an array.
+    expect(vi.mocked(fetch).mock.calls.length).toBe(before);
+  });
+
+  it('keeps the sorted order across pages', async () => {
+    await sortWithPageSize(2);
+    const first = shownPrices();
+
+    pager()?.querySelector<HTMLButtonElement>('[data-role="next"]')?.click();
+
+    expect(shownPrices()).not.toEqual(first);
+    expect(shownPrices().length).toBeGreaterThan(0);
+  });
+
+  it('disables the ends rather than letting the reader walk off them', async () => {
+    await sortWithPageSize(2);
+    const previous = () => pager()?.querySelector<HTMLButtonElement>('[data-role="previous"]');
+    const next = () => pager()?.querySelector<HTMLButtonElement>('[data-role="next"]');
+
+    expect(previous()?.disabled).toBe(true);
+    next()?.click();
+    expect(next()?.disabled).toBe(true);
+    expect(previous()?.disabled).toBe(false);
+  });
+
+  it('puts leboncoin’s pager away, since it no longer describes the list', async () => {
+    await sortWithPageSize(2);
+
+    expect(document.querySelector('#native')?.hasAttribute('data-lbc-prix-m2-pager-hidden')).toBe(
+      true,
+    );
+  });
+
+  it('gives leboncoin’s pager back on reset, and takes ours away', async () => {
+    const sorter = await sortWithPageSize(2);
+
+    sorter.reset();
+
+    expect(pager()).toBeNull();
+    expect(document.querySelector('#native')?.hasAttribute('data-lbc-prix-m2-pager-hidden')).toBe(
+      false,
+    );
+  });
+
+  it('shows no pager when everything fits on one page', async () => {
+    await sortWithPageSize(100, 3);
+
+    expect(pager()?.textContent).toContain('Page 1 sur 1');
+    expect(pager()?.querySelector<HTMLButtonElement>('[data-role="next"]')?.disabled).toBe(true);
+  });
+});
+
 describe('reset', () => {
   it('puts the list back in leboncoin’s order', async () => {
     const before = listedPrices();
