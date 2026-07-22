@@ -96,7 +96,7 @@ jobs:
       # a line break rather than a space. Wrapping this text at 80 columns, as
       # the rest of the repository does, turns every paragraph into a narrow
       # ragged column.
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: |
             .output/*.zip
