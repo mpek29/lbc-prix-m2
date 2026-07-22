@@ -18,6 +18,16 @@ updates:
       # still come through.
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
+
+      # @types/node majors track Node majors. The runtime here is pinned to 20
+      # by .nvmrc and by engines, so accepting types from a newer Node lets
+      # `tsc` approve calls to APIs that are not there when the code runs. CI
+      # goes green and the failure happens later, somewhere else.
+      #
+      # Lift this together with .nvmrc, not on its own. Minor and patch updates
+      # still come through.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       # One PR for the toolchain rather than five. They move together and are
       # verified by the same CI run either way.
