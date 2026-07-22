@@ -289,7 +289,8 @@ describe('when the search spans more pages than leboncoin will serve', () => {
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
 
     const urls = vi.mocked(fetch).mock.calls.map(([url]) => new URL(String(url)));
-    expect(urls.every((url) => url.searchParams.get('sort') === 'price,asc')).toBe(true);
+    expect(urls.every((url) => url.searchParams.get('sort') === 'price')).toBe(true);
+    expect(urls.every((url) => url.searchParams.get('order') === 'asc')).toBe(true);
     expect(urls.map((url) => url.searchParams.get('page'))).toEqual([null, '2', '3']);
   });
 

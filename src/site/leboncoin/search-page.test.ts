@@ -184,25 +184,32 @@ describe('pageUrl', () => {
     expect(pageUrl(`${search}&page=7`, 2)).toBe(`${search}&page=2`);
   });
 
-  it('pins the sort when asked, so the pages tile the result set', () => {
-    // Relevance is re-ranked between requests, so page N does not mean the same
-    // thing twice. An explicit sort is what makes a walk cover the set once.
-    const url = new URL(pageUrl(search, 2, 'price,asc'));
+  it('pins the sort as two parameters, the way leboncoin’s URLs do', () => {
+    // Not `sort=price,asc`. That is the value the radio buttons carry
+    // internally; the URL takes a field and a direction separately. Pinning the
+    // comma form was accepted, ignored, and left the walk on relevance.
+    const url = new URL(pageUrl(search, 2, { field: 'price', order: 'asc' }));
 
-    expect(url.searchParams.get('sort')).toBe('price,asc');
+    expect(url.searchParams.get('sort')).toBe('price');
+    expect(url.searchParams.get('order')).toBe('asc');
     expect(url.searchParams.get('page')).toBe('2');
   });
 
-  it('replaces a sort the reader had already chosen', () => {
-    const url = new URL(pageUrl(`${search}&sort=time,desc`, 1, 'price,asc'));
+  it('overrides a direction the reader had already chosen', () => {
+    // Setting only the field leaves `order=desc` in place, so the pinned sort
+    // means something different depending on where the reader had been.
+    const url = new URL(
+      pageUrl(`${search}&sort=price&order=desc`, 1, { field: 'price', order: 'asc' }),
+    );
 
-    expect(url.searchParams.get('sort')).toBe('price,asc');
+    expect(url.searchParams.get('order')).toBe('asc');
   });
 
-  it('leaves the sort alone when none is pinned', () => {
-    expect(new URL(pageUrl(`${search}&sort=time,desc`, 2)).searchParams.get('sort')).toBe(
-      'time,desc',
-    );
+  it('leaves the reader’s sort alone when none is pinned', () => {
+    const url = new URL(pageUrl(`${search}&sort=price&order=desc`, 2));
+
+    expect(url.searchParams.get('sort')).toBe('price');
+    expect(url.searchParams.get('order')).toBe('desc');
   });
 
   it('keeps every other search filter intact', () => {

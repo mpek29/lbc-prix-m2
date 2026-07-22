@@ -38,6 +38,14 @@ Fetch the search's own pages, sequentially, and sort what comes back.
   result search collected 50 that way. Every request carries an explicit sort,
   so page N means the same thing for the length of the walk. The order does not
   matter, since the result is about to be sorted by €/m² anyway.
+
+  The sort exists in two shapes and they are not interchangeable. The radio
+  buttons carry `price,asc` as a single value; the URL takes `sort=price` and
+  `order=asc` as two parameters. Pinning the radio's form in a URL is accepted
+  and ignored, which leaves the walk on relevance and any `order` the reader had
+  already chosen still in place. Nothing about the response says so: a rejected
+  sort still returns a perfectly good page of results.
+
 - **Walk, do not calculate.** Keep requesting pages until one produces no ad we
   did not already have. That single rule ends the walk whether the results ran
   out, leboncoin clamped the page number, or DataDome served a challenge.
@@ -51,8 +59,9 @@ Fetch the search's own pages, sequentially, and sort what comes back.
   says so. When it cannot, it gives the real numbers rather than implying a
   complete ordering.
 - **Be a considerate guest.** One request at a time, 350 ms apart, abortable,
-  and stopping at the first refusal. Page 1 is never re-fetched, since it is
-  already on screen.
+  and stopping at the first refusal. Page 1 is fetched like the rest, because it
+  has to be read under the same pinned sort; the cards already on screen are
+  matched back by id and reused, so they keep working.
 - **Reuse the existing adapter.** leboncoin server-renders its results, so a
   fetched page arrives with all 35 cards and the same `data-qa-id` and ARIA
   hooks the live page has. The reader written for the live DOM parses fetched
@@ -84,6 +93,13 @@ between reading a search quickly and hammering a site. A challenge page or a
 run of familiar ads both stop the walk, so a site that says no is not asked
 twice. If leboncoin ever signals that the whole thing is unwelcome, the budget
 is one constant and the feature is one directory.
+
+**A challenge page is an HTTP 200 with no ads in it.** Confirmed while writing
+this: two requests came back "successfully" with 774 bytes of DataDome. Nothing
+in the status line distinguishes a block from an empty result, which is why the
+walk's stop condition is "no new ads" rather than an error check, and why an
+empty collection falls back to the ads already on screen instead of rendering
+nothing.
 
 **Two shortfalls were reported as leboncoin's fault before they were ours.**
 First a missing total silently became a single-page sort. Then an incomplete

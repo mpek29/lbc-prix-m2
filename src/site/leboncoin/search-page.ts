@@ -150,6 +150,21 @@ export function planFetch(pagination: Pagination, budgetPages: number): FetchPla
 }
 
 /**
+ * An ordering, in the shape leboncoin's URLs use.
+ *
+ * Two parameters, `sort=price&order=asc`, and not the single comma-joined value
+ * the radio buttons carry internally (`price,asc`). The first version of this
+ * pinned `sort=price,asc`, which is not a value leboncoin's URL accepts: it was
+ * ignored, any `order` already on the URL stayed, and the pin silently did
+ * nothing. The bug is invisible from here, because a rejected sort still
+ * returns a perfectly good page of results.
+ */
+export interface SortSpec {
+  readonly field: string;
+  readonly order: 'asc' | 'desc';
+}
+
+/**
  * A sort to pin while collecting, so the pages tile the result set.
  *
  * The default ordering is `relevance`, which is not a stable total order:
@@ -161,13 +176,21 @@ export function planFetch(pagination: Pagination, budgetPages: number): FetchPla
  * search offers it, and the order the pages arrive in does not matter: they are
  * about to be sorted by price per square metre anyway.
  */
-export const COLLECTION_SORT = 'price,asc';
+export const COLLECTION_SORT: SortSpec = { field: 'price', order: 'asc' };
 
 /** The same search, on another page. Page 1 carries no parameter. */
-export function pageUrl(current: string, page: number, sort?: string): string {
+export function pageUrl(current: string, page: number, sort?: SortSpec): string {
   const url = new URL(current);
   if (page <= 1) url.searchParams.delete('page');
   else url.searchParams.set('page', String(page));
-  if (sort !== undefined) url.searchParams.set('sort', sort);
+
+  if (sort) {
+    // Both, always. Setting only the field leaves whichever direction the
+    // reader last chose, so the same request means different things depending
+    // on where they had been.
+    url.searchParams.set('sort', sort.field);
+    url.searchParams.set('order', sort.order);
+  }
+
   return url.toString();
 }
