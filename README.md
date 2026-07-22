@@ -1,179 +1,181 @@
 <div align="center">
-  <img src="docs/assets/icon.png" alt="Logo Prix au m²" width="128" height="128">
+  <img src="docs/assets/icon.png" alt="Prix au m² logo" width="128" height="128">
   <h1>Prix au m² pour leboncoin</h1>
-  <p><strong>Le prix au mètre carré, là où leboncoin ne l’affiche pas.</strong></p>
+  <p><strong>Price per square metre, where leboncoin does not show it.</strong></p>
   <p>
-    Extension Chrome et Firefox qui calcule le prix au m² de chaque annonce
-    immobilière et l’affiche à côté du prix. Elle ajoute aussi deux options de
-    tri par prix au m², que leboncoin ne propose pas.
+    A Chrome and Firefox extension that works out the price per square metre of
+    every property ad and shows it next to the price. It also adds two sort
+    options leboncoin does not offer: by price per square metre, ascending and
+    descending.
   </p>
 </div>
 
 <p align="center">
-  <a href="https://github.com/mpek29/lbc-prix-m2/releases/latest"><img alt="Dernière version" src="https://img.shields.io/github/v/release/mpek29/lbc-prix-m2?style=flat-square&label=version&color=ff6e14"></a>
+  <a href="https://github.com/mpek29/lbc-prix-m2/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/mpek29/lbc-prix-m2?style=flat-square&label=release&color=ff6e14"></a>
   <a href="https://github.com/mpek29/lbc-prix-m2/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/mpek29/lbc-prix-m2/ci.yml?branch=main&style=flat-square&label=CI"></a>
-  <a href="LICENSE"><img alt="Licence" src="https://img.shields.io/github/license/mpek29/lbc-prix-m2?style=flat-square&color=6b7280"></a>
-  <img alt="Navigateurs" src="https://img.shields.io/badge/Firefox%20%7C%20Chrome-MV3-5865F2?style=flat-square">
-  <img alt="Données collectées" src="https://img.shields.io/badge/donn%C3%A9es%20collect%C3%A9es-aucune-10a37f?style=flat-square">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/mpek29/lbc-prix-m2?style=flat-square&color=6b7280"></a>
+  <img alt="Browsers" src="https://img.shields.io/badge/Firefox%20%7C%20Chrome-MV3-5865F2?style=flat-square">
+  <img alt="Data collected" src="https://img.shields.io/badge/data%20collected-none-10a37f?style=flat-square">
 </p>
 
 <p align="center">
-  <a href="https://github.com/mpek29/lbc-prix-m2/releases/latest"><strong>Télécharger</strong></a>
+  <a href="https://github.com/mpek29/lbc-prix-m2/releases/latest"><strong>Download</strong></a>
   ·
-  <a href="#installation">Installer</a>
+  <a href="#install">Install</a>
   ·
   <a href="docs/architecture.md">Architecture</a>
   ·
-  <a href="docs/adr/">Décisions</a>
+  <a href="docs/adr/">Decisions</a>
   ·
-  <a href="CONTRIBUTING.md">Contribuer</a>
+  <a href="CONTRIBUTING.md">Contributing</a>
   ·
-  <a href="https://github.com/mpek29/lbc-prix-m2/issues">Signaler un problème</a>
+  <a href="https://github.com/mpek29/lbc-prix-m2/issues">Issues</a>
 </p>
 
 <p align="center">
-  <img src="docs/assets/badge.png" alt="Une annonce avec son prix au m²" width="620">
+  <img src="docs/assets/badge.png" alt="An ad card showing its price per square metre" width="620">
 </p>
 
-## Ce que l’extension ajoute
+## What it adds
 
-| leboncoin affiche                | L’extension ajoute                           |
-| -------------------------------- | -------------------------------------------- |
-| Le prix d’une annonce            | Le prix au m², à côté du prix                |
-| Tri par pertinence, date et prix | Tri par prix au m², croissant et décroissant |
-| Une page de résultats à la fois  | Toutes les pages, collectées puis triées     |
-| Rien sur la fiabilité du tri     | Ce qui a été trié, et ce qui manque          |
+| leboncoin gives you                  | The extension adds                               |
+| ------------------------------------ | ------------------------------------------------ |
+| The price of an ad                   | The price per m², right next to it               |
+| Sorting by relevance, date, price    | Sorting by price per m², ascending or descending |
+| One page of results at a time        | Every page, collected and then sorted            |
+| No indication of how sound a sort is | What was sorted, and what is missing             |
 
-## Aperçu
+## Preview
 
 <p align="center">
-  <img src="docs/assets/sort-menu.png" alt="Les deux options de tri ajoutées au menu de leboncoin" width="760">
+  <img src="docs/assets/sort-menu.png" alt="The two sort options added to leboncoin's own menu" width="760">
 </p>
 
-Les deux options s’ajoutent au menu de tri de leboncoin. Elles sont construites
-en clonant leurs propres composants, donc elles suivent leur design.
+The two options join leboncoin's sort menu. They are built by cloning their own
+components, so they follow whatever design leboncoin is using.
 
-## Installation
+## Install
 
-Aucune version signée n’est publiée pour l’instant. Deux façons de l’installer.
+No signed build is published yet, so there are two routes.
 
-**Temporaire, le temps d’un essai**
+**Temporary, to try it out**
 
-| Navigateur | Étapes                                                                               |
-| ---------- | ------------------------------------------------------------------------------------ |
-| Firefox    | `about:debugging#/runtime/this-firefox` → _Charger un module temporaire_ → le `.zip` |
-| Chrome     | `chrome://extensions` → mode développeur → _Charger l’extension non empaquetée_      |
+| Browser | Steps                                                                          |
+| ------- | ------------------------------------------------------------------------------ |
+| Firefox | `about:debugging#/runtime/this-firefox` → _Load Temporary Add-on_ → the `.zip` |
+| Chrome  | `chrome://extensions` → Developer mode → _Load unpacked_                       |
 
-Firefox oublie les modules temporaires au redémarrage.
+Firefox forgets temporary add-ons when it closes.
 
-**Permanente**
+**Permanent**
 
-Firefox refuse les extensions non signées. Mozilla signe gratuitement une
-extension à distribution privée, sans page publique et en moins d’une minute :
-`npm run sign:firefox`. La procédure est dans
+Firefox refuses unsigned extensions on the release channel, and the
+`xpinstall.signatures.required` preference does nothing there. Mozilla signs
+self-distributed add-ons for free, with no public listing, usually in under a
+minute: `npm run sign:firefox`. Full steps in
 [CONTRIBUTING.md](CONTRIBUTING.md#a-permanent-firefox-install).
 
-Chaque page de version contient aussi les étapes d’installation, pour ne pas
-avoir à revenir ici.
+Every release page repeats the install steps, so there is no need to come back
+here for them.
 
-## Fonctionnement
+## How it works
 
-leboncoin construit ses pages côté client et publie des noms de classe qui
-contiennent une empreinte de build. Les deux moitiés de l’approche évidente sont
-donc des pièges : il n’y a rien dans le DOM quand le script démarre, et la
-classe repérée hier a disparu aujourd’hui.
+leboncoin renders its results client side and ships class names with a build
+hash in them. Both halves of the obvious approach are therefore traps: there is
+nothing in the DOM when the content script first runs, and the class you keyed
+off yesterday is gone today.
 
-L’extension procède autrement. Elle observe les mutations de la page et relance
-une passe sans état à chaque changement. Et elle lit la page par sa couche
-d’accessibilité : les attributs `data-qa-id`, les `aria-label`, les phrases
-`.sr-only` écrites pour les lecteurs d’écran. Rien de tout cela ne peut être
-renommé sans casser quelque chose dont leboncoin dépend.
+So the extension does two other things. It watches for mutations and re-runs a
+stateless pass whenever the page changes. And it reads the page through its
+accessibility layer: `data-qa-id` hooks, `aria-label` text, the `.sr-only`
+sentences written for screen readers. None of those can be renamed without
+breaking something leboncoin itself relies on.
 
-Chaque passe compare ce qu’une annonce affiche à ce qu’elle devrait afficher, et
-n’écrit que si les deux diffèrent.
+Each pass compares what a card shows against what it should show, and writes
+only when the two differ.
 
-| Sujet                    | Détail                                                             |
-| ------------------------ | ------------------------------------------------------------------ |
-| Sélecteurs               | Aucun nom de classe. Hooks de test, ARIA, puis forme des URL       |
-| Passes                   | Sans état, rejouées à chaque mutation, donc auto-correctrices      |
-| Annonces sans surface    | Ignorées plutôt que mal calculées                                  |
-| Valeurs invraisemblables | Refusées : un chiffre faux et confiant est pire que pas de chiffre |
+| Topic               | Approach                                                         |
+| ------------------- | ---------------------------------------------------------------- |
+| Selectors           | No class names. QA hooks first, then ARIA, then URL shapes       |
+| Passes              | Stateless, re-run on every mutation, so they are self-correcting |
+| Ads with no surface | Skipped rather than guessed at                                   |
+| Implausible figures | Refused: a confident wrong number is worse than no number        |
 
-Le détail est dans [docs/architecture.md](docs/architecture.md).
+The full picture is in [docs/architecture.md](docs/architecture.md).
 
-## Le tri par prix au m²
+## Sorting by price per m²
 
-leboncoin trie côté serveur, et son paramètre de tri propose la pertinence, la
-date et le prix. Rien ne divise l’un par l’autre. Le tri doit donc se faire dans
-le navigateur, ce qui suppose d’avoir les annonces à trier : l’extension parcourt
-les pages de la recherche, une requête à la fois.
+leboncoin sorts on its server, and its sort parameter offers relevance, date and
+price. Nothing divides one by the other, so the ordering has to happen in the
+browser, which means holding the ads to be ordered. The extension walks the
+search's own pages, one request at a time.
 
-Un plafond n’est pas le nôtre : leboncoin refuse de paginer au-delà de 100
-pages. Une recherche de 217 762 résultats ne peut être triée entièrement par
-personne. Le bandeau au-dessus des résultats dit dans quel cas vous êtes.
+One ceiling is not ours to move: leboncoin refuses to paginate past 100 pages,
+so a search with 217 762 matches cannot be fully ordered by anyone. The banner
+above the results says which case you are in.
 
-| Recherche                   | Résultats | Requêtes | Couverture |
-| --------------------------- | --------- | -------- | ---------- |
-| `category=10` sans filtre   | 217 762   | 100      | 1,6 %      |
-| `category=10` + une commune | 74        | 3        | 100 %      |
+| Search                    | Results | Requests | Coverage |
+| ------------------------- | ------- | -------- | -------- |
+| `category=10`, no filters | 217 762 | 100      | 1.6 %    |
+| `category=10` + one town  | 74      | 3        | 100 %    |
 
-Une recherche filtrée, ce qui est la façon dont on se sert du site, tient en
-trois requêtes et donne une réponse complète. Les requêtes sont séquentielles,
-espacées de 350 ms, interruptibles, et s’arrêtent au premier refus.
+A filtered search, which is how people actually use the site, takes three
+requests and gives a complete answer. Requests are sequential, 350 ms apart,
+abortable, and stop at the first refusal.
 
-Le raisonnement complet est dans
+The reasoning is in
 [ADR 0007](docs/adr/0007-collect-pages-to-sort-by-price-per-area.md).
 
-## Vie privée
+## Privacy
 
-Rien de vous ne quitte votre navigateur. Pas de statistiques, pas de rapport
-d’erreur, pas de configuration distante, aucun serveur à nous. Le manifeste
-Firefox déclare `data_collection_permissions: none`.
+Nothing about you leaves your browser. No analytics, no error reporting, no
+remote config, and no server of ours to talk to. The Firefox manifest declares
+`data_collection_permissions: none`.
 
-La seule exception est visible et volontaire : choisir un tri par prix au m²
-récupère les pages suivantes de la recherche que vous consultez déjà, depuis
-leboncoin, avec votre session. Ce sont les pages que vous obtiendriez en
-cliquant vous-même.
+The one exception is visible and intended: choosing a price per m² sort fetches
+further pages of the search you are already looking at, from leboncoin, using
+your existing session. Those are the pages you would get by clicking through the
+results yourself.
 
-La seule chose enregistrée est l’état du bouton dans la fenêtre de l’extension,
-dans `storage.local`, sur votre machine.
+The only thing stored is whether the badges are switched on, in `storage.local`,
+on your own machine.
 
-## Développement
+## Development
 
 ```bash
 npm ci
-npm run dev            # Chrome, rechargement à chaud
+npm run dev            # Chrome, hot reload
 npm run dev:firefox    # Firefox
-npm run harness        # les annonces capturées, sans installer l’extension
-npm run verify         # format, prose, lint, types, tests : ce que fait la CI
+npm run harness        # the captured ads, no extension install needed
+npm run verify         # format, prose, lint, types, tests: what CI runs
 ```
 
-| Commande              | Rôle                                                               |
-| --------------------- | ------------------------------------------------------------------ |
-| `npm run build`       | Construit pour Chrome dans `.output/chrome-mv3`                    |
-| `npm run zip:firefox` | Construit et empaquette, avec l’archive des sources exigée par AMO |
-| `npm run harness`     | Sert les annonces capturées avec le vrai code                      |
-| `npm run test:watch`  | Tests en continu                                                   |
-| `npm run lint:prose`  | Refuse les tirets cadratins et les mots de remplissage             |
+| Command               | What it does                                               |
+| --------------------- | ---------------------------------------------------------- |
+| `npm run build`       | Builds for Chrome into `.output/chrome-mv3`                |
+| `npm run zip:firefox` | Builds and packages, with the sources archive AMO asks for |
+| `npm run harness`     | Serves the captured ads against the real code              |
+| `npm run test:watch`  | Tests on change                                            |
+| `npm run lint:prose`  | Rejects em dashes and a short list of filler words         |
 
-`npm run harness` sert les captures de vraies annonces avec le code réel, sans
-leboncoin ni extension installée. happy-dom confirme qu’un badge est dans le
-DOM ; il ne dit pas qu’il est illisible.
+The harness serves real captured ads through the real code, with no leboncoin
+and no installed extension. happy-dom will confirm a badge is in the DOM; it
+will not tell you the badge is unreadable.
 
-## Quand ça casse
+## When it breaks
 
-leboncoin finira par changer quelque chose. L’extension s’en aperçoit : si
-toutes les annonces d’une page échouent de la même façon, elle écrit un
-avertissement dans la console au lieu de se taire.
+leboncoin will change something eventually. The extension notices: if every ad
+on a full page fails the same way, it writes a warning to the console instead of
+going quiet.
 
-Dans ce cas,
-[ouvrez un ticket](https://github.com/mpek29/lbc-prix-m2/issues/new?template=selector-drift.yml)
-avec le HTML d’une annonce. Cette capture devient une fixture, donc un test, ce
-qui est le chemin le plus court entre « c’est cassé » et « ça ne peut plus
-casser comme ça ».
+When that happens,
+[open an issue](https://github.com/mpek29/lbc-prix-m2/issues/new?template=selector-drift.yml)
+with one ad card's HTML. That capture becomes a fixture, which becomes a
+regression test, which is the shortest path from "it broke" to "it cannot break
+that way again".
 
-## Licence
+## License
 
-MIT, voir [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
 
-Projet indépendant, sans lien avec leboncoin.
+Independent project, not affiliated with leboncoin.
