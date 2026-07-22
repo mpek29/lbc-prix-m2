@@ -11,6 +11,9 @@ jobs:
   release:
     name: Build and publish
     runs-on: ubuntu-latest
+    env:
+      # Read in `if:` conditions, which cannot test the secrets context directly.
+      AMO_KEY: ${{ secrets.WEB_EXT_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,6 +47,29 @@ jobs:
       - name: Package Firefox
         run: npx wxt zip -b firefox
 
+      # Mozilla signs self-distributed add-ons for free. A signed .xpi installs
+      # permanently on release Firefox; an unsigned .zip can only ever be a
+      # temporary add-on that disappears when the browser closes.
+      #
+      # Skipped when the credentials are absent, so forks and anyone without an
+      # AMO account still get a working release rather than a failed one.
+      - name: Sign for Firefox
+        if: env.AMO_KEY != ''
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
+        run: npm run sign:firefox
+
+      - name: Report whether a signed build exists
+        id: signed
+        run: |
+          if ls .output/signed/*.xpi >/dev/null 2>&1; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo '::notice::No AMO credentials, so this release ships unsigned zips only.'
+          fi
+
       # The zips are the whole distribution, so the instructions travel with
       # them. Anyone landing on a release page from a link has everything they
       # need without opening the repository.
@@ -55,7 +81,9 @@ jobs:
       # ragged column.
       - uses: softprops/action-gh-release@v2
         with:
-          files: .output/*.zip
+          files: |
+            .output/*.zip
+            .output/signed/*.xpi
           generate_release_notes: true
           body: |
             Shows the price per square metre on every property ad in a leboncoin search, next to the price leboncoin already prints, and adds two sort options leboncoin does not offer: by price per square metre, ascending and descending.
@@ -66,11 +94,15 @@ jobs:
 
             ### Firefox
 
+            **If a `.xpi` file is listed under Assets**, it has been signed by Mozilla. Download it, then open it with Firefox, or drag it onto the browser window. It installs permanently and survives restarts. Firefox will ask you to confirm the permissions once.
+
+            **Otherwise**, the `.zip` can still be loaded as a temporary add-on:
+
             1. Open `about:debugging#/runtime/this-firefox`
             2. Click **Load Temporary Add-on…**
             3. Select `lbc-prix-m2-${{ steps.meta.outputs.version }}-firefox.zip` (no need to extract it)
 
-            Firefox removes temporary add-ons when it closes, so this has to be redone after each restart. That is Firefox policy rather than a packaging problem: release builds only keep add-ons Mozilla has signed, and the `xpinstall.signatures.required` setting from older forum posts is ignored there. To install permanently, see [A permanent Firefox install](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md#a-permanent-firefox-install).
+            A temporary add-on disappears when Firefox closes, so this has to be redone after each restart. That is Firefox policy rather than a packaging problem: release builds only run add-ons Mozilla has signed, and the `xpinstall.signatures.required` setting from older forum posts is ignored on the release channel. See [add-on signing in Firefox](https://support.mozilla.org/en-US/kb/add-on-signing-in-firefox) for the reasoning, and [A permanent Firefox install](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md#a-permanent-firefox-install) for signing a build yourself.
 
             ### Chrome
 

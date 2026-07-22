@@ -56,27 +56,27 @@ components, so they follow whatever design leboncoin is using.
 
 ## Install
 
-No signed build is published yet, so there are two routes.
+Take the file for your browser from the
+[latest release](https://github.com/mpek29/lbc-prix-m2/releases/latest).
 
-**Temporary, to try it out**
+| Browser | File   | Steps                                                                          |
+| ------- | ------ | ------------------------------------------------------------------------------ |
+| Firefox | `.xpi` | Open it with Firefox, or drag it onto the window. Permanent                    |
+| Firefox | `.zip` | `about:debugging#/runtime/this-firefox` → _Load Temporary Add-on_. Until close |
+| Chrome  | `.zip` | Extract, then `chrome://extensions` → Developer mode → _Load unpacked_         |
 
-| Browser | Steps                                                                          |
-| ------- | ------------------------------------------------------------------------------ |
-| Firefox | `about:debugging#/runtime/this-firefox` → _Load Temporary Add-on_ → the `.zip` |
-| Chrome  | `chrome://extensions` → Developer mode → _Load unpacked_                       |
+The `.xpi` is signed by Mozilla, which is what lets it install permanently.
+Release Firefox runs only signed add-ons, and the
+`xpinstall.signatures.required` preference from older forum posts is ignored
+there. See
+[add-on signing in Firefox](https://support.mozilla.org/en-US/kb/add-on-signing-in-firefox).
 
-Firefox forgets temporary add-ons when it closes.
-
-**Permanent**
-
-Firefox refuses unsigned extensions on the release channel, and the
-`xpinstall.signatures.required` preference does nothing there. Mozilla signs
-self-distributed add-ons for free, with no public listing, usually in under a
-minute: `npm run sign:firefox`. Full steps in
+A release carries a `.xpi` when the signing credentials are available to CI. To
+sign a build yourself, run `npm run sign:firefox`, with the steps in
 [CONTRIBUTING.md](CONTRIBUTING.md#a-permanent-firefox-install).
 
-Every release page repeats the install steps, so there is no need to come back
-here for them.
+Every release page repeats these steps, so there is no need to come back here
+for them.
 
 ## How it works
 

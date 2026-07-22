@@ -140,6 +140,12 @@ minute.
    npm run sign:firefox
    ```
 
+To have CI do this on every tagged release, put the same two values in the
+repository's secrets, under **Settings, Secrets and variables, Actions**, named
+`WEB_EXT_API_KEY` and `WEB_EXT_API_SECRET`. The release workflow signs when they
+are present and skips when they are not, so a fork without an AMO account still
+gets a working release.
+
 The signed `.xpi` lands in `.output/signed/`. Open it with Firefox and it stays
 installed.
 
