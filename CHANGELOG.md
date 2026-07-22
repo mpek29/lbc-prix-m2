@@ -7,6 +7,13 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Firefox releases carry the signed `.xpi` only. The unsigned zip is built on
+  the way to signing but no longer published, since it installs as a temporary
+  add-on that disappears when the browser closes. Signing credentials are now
+  required for a release rather than optional.
+
 ## [0.2.1] - 2026-07-22
 
 ### Added

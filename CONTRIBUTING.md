@@ -111,11 +111,19 @@ immutable: supersede, do not edit.
 
 1. Update [CHANGELOG.md](CHANGELOG.md) and the version in `package.json`.
 2. Tag `vX.Y.Z` and push it.
-3. CI builds both targets, attaches the zips to a GitHub release, and writes
-   install instructions into the release notes.
+3. CI builds both targets, signs the Firefox build with Mozilla, attaches the
+   `.xpi` and the Chrome zip to a GitHub release, and writes install
+   instructions into the release notes.
+
+Firefox gets the signed `.xpi` and nothing else. The unsigned zip is built on
+the way to signing but never published: it would install as a temporary add-on
+that disappears when the browser closes, and offering it beside a signed build
+invites people to pick the one that does not last. That makes the signing
+credentials a hard requirement, so a release without them fails rather than
+quietly shipping nothing for Firefox.
 
 Distribution stops there. The extension is not on the Firefox or Chrome stores,
-so a release is the zips plus the instructions that come with them.
+so a release is those files plus the instructions that come with them.
 
 ## A permanent Firefox install
 

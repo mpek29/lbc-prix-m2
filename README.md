@@ -59,21 +59,21 @@ components, so they follow whatever design leboncoin is using.
 Take the file for your browser from the
 [latest release](https://github.com/mpek29/lbc-prix-m2/releases/latest).
 
-| Browser | File   | Steps                                                                          |
-| ------- | ------ | ------------------------------------------------------------------------------ |
-| Firefox | `.xpi` | Open it with Firefox, or drag it onto the window. Permanent                    |
-| Firefox | `.zip` | `about:debugging#/runtime/this-firefox` → _Load Temporary Add-on_. Until close |
-| Chrome  | `.zip` | Extract, then `chrome://extensions` → Developer mode → _Load unpacked_         |
+| Browser | File   | Steps                                                                  |
+| ------- | ------ | ---------------------------------------------------------------------- |
+| Firefox | `.xpi` | Open it with Firefox, or drag it onto the window                       |
+| Chrome  | `.zip` | Extract, then `chrome://extensions` → Developer mode → _Load unpacked_ |
 
-The `.xpi` is signed by Mozilla, which is what lets it install permanently.
-Release Firefox runs only signed add-ons, and the
+The `.xpi` is signed by Mozilla, which is what allows a permanent install.
+Release Firefox runs signed add-ons only, and the
 `xpinstall.signatures.required` preference from older forum posts is ignored
 there. See
 [add-on signing in Firefox](https://support.mozilla.org/en-US/kb/add-on-signing-in-firefox).
 
-A release carries a `.xpi` when the signing credentials are available to CI. To
-sign a build yourself, run `npm run sign:firefox`, with the steps in
-[CONTRIBUTING.md](CONTRIBUTING.md#a-permanent-firefox-install).
+No unsigned zip is published for Firefox. It would load as a temporary add-on
+that disappears when the browser closes, which is a worse first experience than
+no download at all. To build and sign your own, run `npm run sign:firefox`, with
+the steps in [CONTRIBUTING.md](CONTRIBUTING.md#a-permanent-firefox-install).
 
 Every release page repeats these steps, so there is no need to come back here
 for them.

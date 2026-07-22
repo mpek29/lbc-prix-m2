@@ -47,14 +47,23 @@ jobs:
       - name: Package Firefox
         run: npx wxt zip -b firefox
 
-      # Mozilla signs self-distributed add-ons for free. A signed .xpi installs
-      # permanently on release Firefox; an unsigned .zip can only ever be a
-      # temporary add-on that disappears when the browser closes.
+      # The signed .xpi is the only Firefox build that ships, so signing is
+      # required rather than best effort. An unsigned zip can only be loaded as
+      # a temporary add-on that disappears when the browser closes, which is a
+      # worse first experience than no download, so it is not published.
       #
-      # Skipped when the credentials are absent, so forks and anyone without an
-      # AMO account still get a working release rather than a failed one.
+      # This means a release without credentials fails here instead of quietly
+      # producing nothing for Firefox.
+      - name: Refuse to release without signing credentials
+        if: env.AMO_KEY == ''
+        run: |
+          echo '::error::WEB_EXT_API_KEY and WEB_EXT_API_SECRET are required.'
+          echo 'Firefox releases ship a signed .xpi only. Get credentials at'
+          echo 'https://addons.mozilla.org/en-US/developers/addon/api/key/ and add'
+          echo 'them under Settings, Secrets and variables, Actions.'
+          exit 1
+
       - name: Sign for Firefox
-        if: env.AMO_KEY != ''
         env:
           WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
           WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
@@ -62,18 +71,21 @@ jobs:
 
       # AMO names the signed file after an internal identifier, something like
       # 5311af59627749b69d2d-0.2.1.xpi, which tells a reader nothing about what
-      # they are downloading. Renamed to match the zips beside it.
-      - name: Report whether a signed build exists
-        id: signed
+      # they are downloading.
+      - name: Name the signed build after the release
         run: |
           xpi=$(ls .output/signed/*.xpi 2>/dev/null | head -1)
-          if [ -n "$xpi" ]; then
-            mv "$xpi" ".output/signed/lbc-prix-m2-${{ steps.meta.outputs.version }}-firefox.xpi"
-            echo 'available=true' >> "$GITHUB_OUTPUT"
-          else
-            echo 'available=false' >> "$GITHUB_OUTPUT"
-            echo '::notice::No AMO credentials, so this release ships unsigned zips only.'
+          if [ -z "$xpi" ]; then
+            echo '::error::Signing reported success but produced no .xpi.'
+            exit 1
           fi
+          mv "$xpi" ".output/signed/lbc-prix-m2-${{ steps.meta.outputs.version }}-firefox.xpi"
+
+      # The Firefox zip is built on the way to signing but never published. It
+      # would install only as a temporary add-on, and offering it beside a
+      # signed build invites people to pick the one that disappears.
+      - name: Withhold the unsigned Firefox zip
+        run: rm -f .output/*-firefox.zip
 
       # The zips are the whole distribution, so the instructions travel with
       # them. Anyone landing on a release page from a link has everything they
@@ -95,19 +107,15 @@ jobs:
 
             ## Install
 
-            Download the file for your browser from **Assets** below.
+            Download the file for your browser from **Assets** below. Firefox takes the `.xpi`, Chrome takes the `.zip`.
 
             ### Firefox
 
-            **If a `.xpi` file is listed under Assets**, it has been signed by Mozilla. Download it, then open it with Firefox, or drag it onto the browser window. It installs permanently and survives restarts. Firefox will ask you to confirm the permissions once.
+            Download `lbc-prix-m2-${{ steps.meta.outputs.version }}-firefox.xpi`, then open it with Firefox or drag it onto the browser window. Firefox asks you to confirm the permissions once, and it stays installed.
 
-            **Otherwise**, the `.zip` can still be loaded as a temporary add-on:
+            The file is signed by Mozilla, which is what allows a permanent install. Release Firefox runs signed add-ons only, and the `xpinstall.signatures.required` setting from older forum posts is ignored there. See [add-on signing in Firefox](https://support.mozilla.org/en-US/kb/add-on-signing-in-firefox).
 
-            1. Open `about:debugging#/runtime/this-firefox`
-            2. Click **Load Temporary Add-on…**
-            3. Select `lbc-prix-m2-${{ steps.meta.outputs.version }}-firefox.zip` (no need to extract it)
-
-            A temporary add-on disappears when Firefox closes, so this has to be redone after each restart. That is Firefox policy rather than a packaging problem: release builds only run add-ons Mozilla has signed, and the `xpinstall.signatures.required` setting from older forum posts is ignored on the release channel. See [add-on signing in Firefox](https://support.mozilla.org/en-US/kb/add-on-signing-in-firefox) for the reasoning, and [A permanent Firefox install](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md#a-permanent-firefox-install) for signing a build yourself.
+            No unsigned zip is published for Firefox. It would install as a temporary add-on that disappears when the browser closes, which is a worse first experience than no download at all. To build and sign your own, see [A permanent Firefox install](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md#a-permanent-firefox-install).
 
             ### Chrome
 
