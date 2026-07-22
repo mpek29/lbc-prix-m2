@@ -365,6 +365,43 @@ describe('while it is collecting', () => {
   });
 });
 
+describe('when the walk stops before the advertised total', () => {
+  it('reports both numbers instead of claiming it got everything', async () => {
+    // The bug this test exists for. "A page gave us nothing new" is what
+    // running out of results looks like, and equally what leboncoin returning
+    // page 1 for page 2 looks like, and what a challenge page looks like.
+    // Calling that "complete" is the quiet lie the banner exists to prevent.
+    renderSearchPage(pageOf(70)); // 2 pages
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(`<html><body>${fixtureList('ad-card-rental')}</body></html>`, { status: 200 }),
+    );
+
+    makeSorter().syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await vi.waitFor(() => expect(document.querySelector('[data-lbc-prix-m2-busy]')).toBeNull());
+
+    const summary = document.querySelector('[data-lbc-prix-m2-summary]')?.textContent ?? '';
+    expect(summary).toContain('sur 70 annoncées');
+    expect(summary).toContain('n’a pas renvoyé la suite');
+    expect(summary).not.toContain('de cette recherche');
+  });
+
+  it('says so in the console, which released builds still show', async () => {
+    renderSearchPage(pageOf(70));
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(`<html><body>${fixtureList('ad-card-rental')}</body></html>`, { status: 200 }),
+    );
+
+    makeSorter().syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await vi.waitFor(() => expect(logger.warn).toHaveBeenCalled());
+
+    expect(vi.mocked(logger.warn).mock.calls[0]?.[0]).toMatch(/advertises 70/);
+  });
+});
+
 describe('reset', () => {
   it('puts the list back in leboncoin’s order', async () => {
     const before = listedPrices();

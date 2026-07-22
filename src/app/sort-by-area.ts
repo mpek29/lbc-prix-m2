@@ -191,6 +191,15 @@ export function createAreaSorter(
         });
       }
       logger.debug('sorted', { direction: next, ads: ads.length, pages: pages.length });
+
+      if (stoppedEarly && plan.total !== null && ads.length < plan.total) {
+        // Visible in released builds, unlike debug. Either leboncoin stopped
+        // paginating, or the count we read off the page is not the total.
+        logger.warn(
+          `collected ${ads.length} ads but the page advertises ${plan.total}. ` +
+            `Stopped after ${pages.length} page(s): the next one returned nothing new.`,
+        );
+      }
     } catch (error) {
       logger.error('could not collect the pages of this search', error);
       if (summary) {
@@ -277,19 +286,36 @@ export function createAreaSorter(
         : '';
 
     const pages = `${run.pagesRead} page${run.pagesRead > 1 ? 's' : ''}`;
+    const count = (value: number) => value.toLocaleString('fr-FR');
 
-    // Running out of pages means we hold everything reachable, whatever the
-    // advertised total said.
-    if (plan.complete || run.stoppedEarly) {
-      return `Les ${ads.length} annonces de cette recherche, sur ${pages}.${range}`;
+    // Everything we expected, so say so plainly.
+    if (plan.total !== null && ads.length >= plan.total) {
+      return `Les ${count(ads.length)} annonces de cette recherche, sur ${pages}.${range}`;
+    }
+
+    // Stopped before the total said we should have. `stoppedEarly` means a page
+    // gave us nothing new, which is what running out of results looks like, and
+    // equally what leboncoin returning page 1 for page 2 looks like, and what a
+    // challenge page looks like. Calling that "complete" is the quiet lie this
+    // banner exists to prevent, so it reports both numbers and lets the reader
+    // judge.
+    if (run.stoppedEarly && plan.total !== null) {
+      return (
+        `${count(ads.length)} annonces sur ${count(plan.total)} annoncées, ` +
+        `collecte arrêtée après ${pages}. leboncoin n’a pas renvoyé la suite.${range}`
+      );
+    }
+
+    if (run.stoppedEarly) {
+      return `Les ${count(ads.length)} annonces trouvées, sur ${pages}.${range}`;
     }
 
     if (plan.total === null) {
-      return `${ads.length} annonces collectées sur ${pages}.${range}`;
+      return `${count(ads.length)} annonces collectées sur ${pages}.${range}`;
     }
 
     return (
-      `Les ${ads.length} premières sur ${plan.total.toLocaleString('fr-FR')} résultats. ` +
+      `Les ${count(ads.length)} premières sur ${count(plan.total)} résultats. ` +
       `leboncoin ne permet pas d’aller au-delà.${range}`
     );
   }

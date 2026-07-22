@@ -33,7 +33,7 @@ export interface Pagination {
 const NEXT_DATA = 'script#__NEXT_DATA__';
 
 /** `217 762 annonces` as rendered on the page, in any of France's spacings. */
-const RESULT_COUNT = /(\d[\d\s]*)\s*(annonces?|résultats?)\b/i;
+const RESULT_COUNT = /(\d[\d\s]*)\s*(annonces?|résultats?)\b/gi;
 
 const isPositiveInt = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value > 0;
@@ -72,11 +72,18 @@ function readFromNextData(doc: Document): Partial<Pagination> {
  * `__NEXT_DATA__` is a private structure that owes us nothing.
  */
 export function readResultCount(doc: Document): number | null {
-  const match = RESULT_COUNT.exec(doc.body?.textContent ?? '');
-  if (!match?.[1]) return null;
+  let largest: number | null = null;
 
-  const value = parseFrenchNumber(match[1]);
-  return value !== null && value > 0 ? value : null;
+  // The largest match rather than the first. A results page can carry several
+  // of these ("35 annonces" in a per-page line, "62 annonces" for the search),
+  // and taking the first one found reports a page size as a total, which reads
+  // as "this search has one page" and stops the collection before it starts.
+  for (const match of (doc.body?.textContent ?? '').matchAll(RESULT_COUNT)) {
+    const value = match[1] === undefined ? null : parseFrenchNumber(match[1]);
+    if (value !== null && value > 0 && (largest === null || value > largest)) largest = value;
+  }
+
+  return largest;
 }
 
 /**
