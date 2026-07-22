@@ -13,8 +13,10 @@ import {
   pageUrl,
   planFetch,
   readPagination,
+  withoutSort,
   type FetchPlan,
 } from '@/site/leboncoin/search-page';
+import { currentUrl, replaceUrl } from '@/platform/url';
 import { fetchPagesSequentially } from '@/platform/http';
 import type { Logger } from '@/platform/logger';
 import { createPager, findPager, updatePager } from '@/ui/pager';
@@ -23,6 +25,7 @@ import {
   createSortSummary,
   findSortSummary,
   setResultsBusy,
+  setSortAction,
   setSortProgress,
   updateSortSummary,
 } from '@/ui/sort-summary';
@@ -64,9 +67,30 @@ const LABELS: Record<SortDirection, string> = {
   desc: 'Prix/m² décroissant',
 };
 
+/**
+ * Our own query parameter, so the address bar agrees with the page.
+ *
+ * leboncoin has no €/m² ordering, so there is no parameter of theirs that could
+ * carry this. Ours is namespaced and unknown to them, which they ignore.
+ *
+ * Restoring it on load selects the option and offers to run it. It does not run
+ * it: opening a link should never quietly start a hundred requests.
+ */
+const URL_PARAM = 'lbc-prix-m2';
+
+const DIRECTIONS: Record<string, SortDirection> = { asc: 'asc', desc: 'desc' };
+
 export interface AreaSorter {
   /** Adds our options to the sort menu whenever leboncoin opens it. */
   syncMenu(): void;
+  /**
+   * Picks up a sort the URL asks for, and offers to run it.
+   *
+   * It does not run it. A link is not consent to make a hundred
+   * requests, and a reader who opened one from a bookmark should see what it
+   * asked for before it starts.
+   */
+  restore(): void;
   /** Undoes everything and puts the page back as it was served. */
   reset(): void;
   /** The direction currently applied, if any. */
@@ -89,6 +113,9 @@ export function createAreaSorter(
   const delayMs = options.delayMs ?? DELAY_MS;
   /** Marks leboncoin's pager while ours stands in for it. */
   const NATIVE_PAGER_HIDDEN = 'data-lbc-prix-m2-pager-hidden';
+
+  /** The address bar as we found it, to put back on reset. */
+  const initialUrl = currentUrl(doc);
 
   let direction: SortDirection | null = null;
   let originalOrder: Element[] | null = null;
@@ -149,6 +176,7 @@ export function createAreaSorter(
       }
     }
     setChipLabel(`Tri : ${LABELS[next]}`);
+    rememberInUrl(next);
 
     run?.abort();
     run = new AbortController();
@@ -158,6 +186,29 @@ export function createAreaSorter(
   function setChipLabel(text: string): void {
     const label = findSortChipLabel(doc);
     if (label) label.textContent = text;
+  }
+
+  /**
+   * Puts the chosen ordering in the address bar, and takes leboncoin's out.
+   *
+   * Theirs describes an ordering the page is no longer showing. Leaving it
+   * means a URL reading `sort=price&order=desc` above a list sorted ascending
+   * by price per square metre, which is what prompted this.
+   */
+  function rememberInUrl(next: SortDirection): void {
+    const url = new URL(withoutSort(currentUrl(doc)));
+    url.searchParams.set(URL_PARAM, next);
+    replaceUrl(doc, url.toString());
+  }
+
+  /**
+   * Reads a sort back off the address bar, without running it.
+   *
+   * @returns the direction the link asked for, if any.
+   */
+  function restoreFromUrl(): SortDirection | null {
+    const asked = new URL(currentUrl(doc)).searchParams.get(URL_PARAM) ?? '';
+    return DIRECTIONS[asked] ?? null;
   }
 
   // ── Applying ──────────────────────────────────────────────────────────────
@@ -439,10 +490,39 @@ export function createAreaSorter(
 
     findPager(doc)?.remove();
     restoreNativePagination();
+    replaceUrl(doc, initialUrl);
 
     findSortSummary(doc)?.remove();
     for (const row of findSortOptions(doc)) setOptionChecked(row, false);
   }
 
-  return { syncMenu, reset, active: () => direction };
+  function restore(): void {
+    const asked = restoreFromUrl();
+    if (asked === null || direction !== null) return;
+
+    // Enough state for the menu to show the right option as chosen, without
+    // touching the results.
+    direction = asked;
+    setChipLabel(`Tri : ${LABELS[asked]}`);
+
+    const list = findResultsList(doc);
+    if (!list) return;
+
+    const summary = showSummary(list, {
+      title: LABELS[asked],
+      detail: 'ce lien demande ce tri, qui doit collecter les annonces.',
+    });
+    if (!summary) return;
+
+    setSortAction(summary, {
+      label: 'Lancer le tri',
+      onClick: () => {
+        setSortAction(summary, null);
+        void choose(asked);
+      },
+    });
+    logger.debug('sort restored from the url, waiting for confirmation', { asked });
+  }
+
+  return { syncMenu, restore, reset, active: () => direction };
 }

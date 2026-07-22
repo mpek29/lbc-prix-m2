@@ -178,6 +178,23 @@ export interface SortSpec {
  */
 export const COLLECTION_SORT: SortSpec = { field: 'price', order: 'asc' };
 
+/**
+ * leboncoin's own ordering parameters.
+ *
+ * Left on the URL while a €/m² sort is active, they describe an ordering the
+ * page is not using, which is how a reader ends up looking at
+ * `sort=price&order=desc` above a list sorted ascending by price per square
+ * metre.
+ */
+export const SORT_PARAMS = ['sort', 'order'] as const;
+
+/** The same search with leboncoin's ordering removed. */
+export function withoutSort(current: string): string {
+  const url = new URL(current);
+  for (const name of SORT_PARAMS) url.searchParams.delete(name);
+  return url.toString();
+}
+
 /** The same search, on another page. Page 1 carries no parameter. */
 export function pageUrl(current: string, page: number, sort?: SortSpec): string {
   const url = new URL(current);

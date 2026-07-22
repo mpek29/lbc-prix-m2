@@ -16,6 +16,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - A banner above the results saying what was actually sorted, including when
   the result set is larger than leboncoin will paginate. See
   [ADR 0007](docs/adr/0007-collect-pages-to-sort-by-price-per-area.md).
+- The chosen ordering is written to the address bar as `lbc-prix-m2=asc`, and
+  leboncoin's own `sort` and `order` are cleared, so the URL stops describing an
+  ordering the page is not showing. Opening such a link selects the option and
+  offers to run it, rather than starting a collection on its own.
 - An explicit sort is pinned while collecting, so the pages tile the result set
   instead of overlapping. Relevance ordering is re-ranked between requests,
   which made a 62 result search collect 50. The pin uses leboncoin's URL shape,

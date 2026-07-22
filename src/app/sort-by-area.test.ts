@@ -553,6 +553,132 @@ describe('paging the sorted results', () => {
   });
 });
 
+describe('the address bar', () => {
+  const params = () => new URL(document.location.href).searchParams;
+
+  const setUrl = (search: string) => window.history.replaceState(null, '', `/recherche?${search}`);
+
+  beforeEach(() => setUrl('category=10'));
+  afterEach(() => setUrl('category=10'));
+
+  it('records the chosen ordering, so the link matches the page', async () => {
+    const sorter = makeSorter();
+    sorter.syncMenu();
+
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await settle();
+
+    expect(params().get('lbc-prix-m2')).toBe('asc');
+  });
+
+  it('clears leboncoin’s ordering, which no longer describes the list', async () => {
+    // The report that prompted this: a URL reading sort=price&order=desc above
+    // a list sorted ascending by price per square metre.
+    setUrl('category=10&sort=price&order=desc');
+
+    makeSorter().syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await settle();
+
+    expect(params().get('sort')).toBeNull();
+    expect(params().get('order')).toBeNull();
+    expect(params().get('lbc-prix-m2')).toBe('asc');
+  });
+
+  it('keeps the search itself intact', async () => {
+    setUrl('category=10&locations=Concarneau_29900&price=min-688');
+
+    makeSorter().syncMenu();
+    findSortOptions(document)[1]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await settle();
+
+    expect(params().get('locations')).toBe('Concarneau_29900');
+    expect(params().get('price')).toBe('min-688');
+    expect(params().get('lbc-prix-m2')).toBe('desc');
+  });
+
+  it('puts the address bar back on reset', async () => {
+    setUrl('category=10&sort=price&order=desc');
+    const before = document.location.href;
+    const sorter = makeSorter();
+    sorter.syncMenu();
+    findSortOptions(document)[0]?.dispatchEvent(new Event('click', { bubbles: true }));
+    await settle();
+
+    sorter.reset();
+
+    expect(document.location.href).toBe(before);
+  });
+});
+
+describe('restoring a sort from a link', () => {
+  const setUrl = (search: string) => window.history.replaceState(null, '', `/recherche?${search}`);
+
+  afterEach(() => setUrl('category=10'));
+
+  it('selects the option the link asked for', () => {
+    setUrl('category=10&lbc-prix-m2=desc');
+    const sorter = makeSorter();
+
+    sorter.restore();
+    sorter.syncMenu();
+
+    expect(sorter.active()).toBe('desc');
+    expect(
+      findSortOptions(document)[1]?.querySelector('[role="radio"]')?.getAttribute('aria-checked'),
+    ).toBe('true');
+  });
+
+  it('does not collect anything until asked', async () => {
+    // A link is not consent to make a hundred requests. Opening one should show
+    // what it wants, not start doing it.
+    setUrl('category=10&lbc-prix-m2=asc');
+
+    makeSorter().restore();
+    await settle();
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-lbc-prix-m2-summary]')?.textContent).toContain(
+      'ce lien demande ce tri',
+    );
+  });
+
+  it('runs it when the reader presses the button', async () => {
+    setUrl('category=10&lbc-prix-m2=asc');
+    const sorter = makeSorter();
+    sorter.restore();
+
+    document
+      .querySelector<HTMLButtonElement>('.lbc-prix-m2-summary__action')
+      ?.dispatchEvent(new Event('click', { bubbles: true }));
+    await settle();
+
+    expect(sorter.active()).toBe('asc');
+    expect(document.querySelector('[data-lbc-prix-m2-summary]')?.textContent).not.toContain(
+      'ce lien demande',
+    );
+  });
+
+  it('ignores a value that is not a direction', () => {
+    setUrl('category=10&lbc-prix-m2=sideways');
+    const sorter = makeSorter();
+
+    sorter.restore();
+
+    expect(sorter.active()).toBeNull();
+    expect(document.querySelector('[data-lbc-prix-m2-summary]')).toBeNull();
+  });
+
+  it('does nothing when the link carries no sort', () => {
+    setUrl('category=10');
+    const sorter = makeSorter();
+
+    sorter.restore();
+
+    expect(sorter.active()).toBeNull();
+  });
+});
+
 describe('reset', () => {
   it('puts the list back in leboncoin’s order', async () => {
     const before = listedPrices();

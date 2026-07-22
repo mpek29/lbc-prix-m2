@@ -26,6 +26,7 @@ const CLASS = {
   detail: 'lbc-prix-m2-summary__detail',
   track: 'lbc-prix-m2-summary__track',
   bar: 'lbc-prix-m2-summary__bar',
+  action: 'lbc-prix-m2-summary__action',
 } as const;
 
 export interface SummaryText {
@@ -68,6 +69,34 @@ export function updateSortSummary(summary: Element, text: SummaryText): void {
   const detail = summary.querySelector(`.${CLASS.detail}`);
   if (title) title.textContent = text.title;
   if (detail) detail.textContent = text.detail;
+}
+
+/**
+ * Offers an action in the banner, or removes it when passed `null`.
+ *
+ * Used to restore a sort from the URL without acting on it. Opening a shared
+ * link should not quietly start a hundred requests, so the reader is told what
+ * the link asked for and given the button.
+ */
+export function setSortAction(
+  summary: Element,
+  action: { label: string; onClick: () => void } | null,
+): void {
+  summary.querySelector(`.${CLASS.action}`)?.remove();
+  if (!action) return;
+
+  const doc = summary.ownerDocument;
+  const button = doc.createElement('button');
+  button.type = 'button';
+  button.className = CLASS.action;
+  button.textContent = action.label;
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    action.onClick();
+  });
+
+  summary.querySelector('.lbc-prix-m2-summary__line')?.append(button);
 }
 
 /**

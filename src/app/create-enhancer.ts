@@ -48,6 +48,9 @@ export function createEnhancer(doc: Document, logger: Logger): Enhancer {
   return {
     start() {
       if (stopObserving) return;
+      // Before the first pass, so a sort asked for by the URL is showing by the
+      // time the reader looks at the page.
+      sorter.restore();
       runPass();
       stopObserving = observeMutations(doc.body, runPass, { isOwnNode: isOurs });
       logger.debug('watching for new ad cards');

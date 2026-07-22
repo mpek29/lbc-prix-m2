@@ -66,6 +66,29 @@
   display: none;
 }
 
+[data-lbc-prix-m2-summary] .lbc-prix-m2-summary__action {
+  margin-left: auto;
+  padding: 4px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+[data-lbc-prix-m2-summary] .lbc-prix-m2-summary__action:hover {
+  border-color: #ff6e14;
+  color: #ff6e14;
+}
+
+[data-lbc-prix-m2-summary] .lbc-prix-m2-summary__action:focus-visible {
+  outline: 2px solid #ff6e14;
+  outline-offset: 2px;
+}
+
 .lbc-prix-m2-summary__title {
   font-weight: 700;
   white-space: nowrap;

@@ -67,6 +67,13 @@ Fetch the search's own pages, sequentially, and sort what comes back.
   hooks the live page has. The reader written for the live DOM parses fetched
   pages unchanged.
 
+- **Put the ordering in the address bar, but never act on it alone.** The URL
+  gains `lbc-prix-m2=asc` and loses leboncoin's `sort` and `order`, which would
+  otherwise describe an ordering the page is not showing. Opening such a link
+  restores the choice and offers a button. It does not collect: a link is not
+  consent to make a hundred requests, and a bookmark that quietly starts them is
+  a worse neighbour than one that asks.
+
 ## Consequences
 
 The good case is very good. A filtered search is three requests and about a
